@@ -1,36 +1,72 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Спартакиада 2026 — Integra Construction KZ
 
-## Getting Started
+Система судейства, расписания и live-табло.
 
-First, run the development server:
+## Стек
+
+- Next.js 16 + TypeScript + Tailwind
+- Supabase (Auth, PostgreSQL, Realtime)
+
+## Локальный запуск
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Открой http://localhost:3000
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Первичная настройка Supabase
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Открой [Supabase Dashboard](https://supabase.com/dashboard) → твой проект
+2. **SQL Editor** → выполни весь файл `supabase/schema.sql`
+3. **Settings → API** — скопируй в `.env.local`:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY` (secret, для админки пользователей)
+4. **Authentication → URL Configuration** → Redirect URLs:
+   - `http://localhost:3000/auth/callback`
+   - (после деплоя) `https://твой-домен/auth/callback`
+5. Создай первого админа в **Authentication → Users** или через `/admin` после входа
+6. Если пользователь создан до `schema.sql`, добавь профиль вручную:
 
-## Learn More
+```sql
+insert into public.profiles (id, full_name, role)
+values ('ТВОЙ-UUID', 'Админ', 'admin')
+on conflict (id) do update set role = 'admin';
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Пользователи и пароли
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Действие | Где |
+|----------|-----|
+| Создать судью/модератора | `/admin` → форма «Создать пользователя» |
+| Сбросить пароль пользователю | `/admin` → «Сбросить пароль» у нужного человека |
+| Сменить свой пароль | «Пароль» в шапке или `/settings/password` |
+| Забыл пароль | `/login` → «Забыли пароль?» (письмо на email) |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Админ создаёт аккаунт с **временным паролем** → передаёт судье → судья меняет в «Пароль» или по ссылке из email.
 
-## Deploy on Vercel
+## Роли
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+| Роль | Доступ |
+|------|--------|
+| admin | Пользователи, назначение судей, всё остальное |
+| moderator | Команды, расписание |
+| judge | Ввод баллов и мест по своим дисциплинам |
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Публичные страницы
+
+- `/live` — общий зачёт (сумма мест, меньше = лучше)
+- `/live/schedule` — расписание в реальном времени
+
+## Переменные окружения
+
+Скопируй `.env.example` в `.env.local` и заполни ключи из Supabase → Settings → API.
+
+## Деплой
+
+1. Залей репозиторий на GitHub
+2. Подключи проект в [Vercel](https://vercel.com)
+3. Добавь те же env-переменные в Vercel
+4. Для live-экрана открой `/live` в полноэкранном режиме (F11)
