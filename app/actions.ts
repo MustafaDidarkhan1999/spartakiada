@@ -27,6 +27,9 @@ async function revalidateAll() {
   revalidatePath("/display");
   revalidatePath("/live");
   revalidatePath("/moderator");
+  revalidatePath("/moderator/results");
+  revalidatePath("/moderator/teams");
+  revalidatePath("/moderator/schedule");
   revalidatePath("/judge");
   revalidatePath("/admin");
 }
@@ -61,22 +64,31 @@ export async function upsertTeam(formData: FormData) {
   const shortName = String(formData.get("short_name") ?? "").trim() || null;
   const sortOrder = Number(formData.get("sort_order") ?? 0);
 
-  if (!name) return;
+  if (!name) {
+    redirect(
+      `/moderator/teams?error=${encodeURIComponent("Укажите название команды.")}`,
+    );
+  }
 
-  if (id) {
-    await supabase
-      .from("teams")
-      .update({ name, short_name: shortName, sort_order: sortOrder })
-      .eq("id", id);
-  } else {
-    await supabase.from("teams").insert({
-      name,
-      short_name: shortName,
-      sort_order: sortOrder,
-    });
+  const { error } = id
+    ? await supabase
+        .from("teams")
+        .update({ name, short_name: shortName, sort_order: sortOrder })
+        .eq("id", id)
+    : await supabase.from("teams").insert({
+        name,
+        short_name: shortName,
+        sort_order: sortOrder,
+      });
+
+  if (error) {
+    redirect(`/moderator/teams?error=${encodeURIComponent(error.message)}`);
   }
 
   await revalidateAll();
+  redirect(
+    `/moderator/teams?message=${encodeURIComponent(id ? "Команда обновлена." : "Команда добавлена.")}`,
+  );
 }
 
 export async function deleteTeam(formData: FormData) {
@@ -85,8 +97,19 @@ export async function deleteTeam(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) return;
 
-  await supabase.from("teams").update({ is_active: false }).eq("id", id);
+  const { error } = await supabase
+    .from("teams")
+    .update({ is_active: false })
+    .eq("id", id);
+
+  if (error) {
+    redirect(`/moderator/teams?error=${encodeURIComponent(error.message)}`);
+  }
+
   await revalidateAll();
+  redirect(
+    `/moderator/teams?message=${encodeURIComponent("Команда скрыта.")}`,
+  );
 }
 
 export async function upsertScheduleEvent(formData: FormData) {
@@ -203,13 +226,20 @@ export async function saveDisciplineResult(formData: FormData) {
   const scoreRaw = String(formData.get("score") ?? "").trim();
   const placeRaw = String(formData.get("place") ?? "").trim();
   const status = String(formData.get("status") ?? "published");
+  const returnTo = String(formData.get("return_to") ?? "").trim();
 
-  if (!disciplineId || !teamId) return;
+  const back =
+    returnTo ||
+    (disciplineId ? `/judge/${disciplineId}` : "/moderator/results");
+
+  if (!disciplineId || !teamId) {
+    redirect(`${back}?error=${encodeURIComponent("Не указаны дисциплина или команда.")}`);
+  }
 
   const score = scoreRaw === "" ? null : Number(scoreRaw);
   const place = placeRaw === "" ? null : Number(placeRaw);
 
-  await supabase.from("discipline_results").upsert(
+  const { error } = await supabase.from("discipline_results").upsert(
     {
       discipline_id: disciplineId,
       team_id: teamId,
@@ -221,14 +251,24 @@ export async function saveDisciplineResult(formData: FormData) {
     { onConflict: "discipline_id,team_id" },
   );
 
+  if (error) {
+    redirect(`${back}?error=${encodeURIComponent(error.message)}`);
+  }
+
   await revalidateAll();
+  redirect(`${back}?message=${encodeURIComponent("Результат сохранён.")}`);
 }
 
 export async function deleteDisciplineResult(formData: FormData) {
   const profile = await requireProfile(["admin", "moderator", "judge"]);
   const supabase = await createClient();
   const id = String(formData.get("id") ?? "");
-  if (!id) return;
+  const returnTo = String(formData.get("return_to") ?? "").trim();
+  const back = returnTo || "/moderator/results";
+
+  if (!id) {
+    redirect(`${back}?error=${encodeURIComponent("Не указана запись.")}`);
+  }
 
   if (profile.role === "judge") {
     const { data: result } = await supabase
@@ -237,7 +277,9 @@ export async function deleteDisciplineResult(formData: FormData) {
       .eq("id", id)
       .maybeSingle();
 
-    if (!result) return;
+    if (!result) {
+      redirect(`${back}?error=${encodeURIComponent("Запись не найдена.")}`);
+    }
 
     const { data: assignment } = await supabase
       .from("judge_assignments")
@@ -246,11 +288,18 @@ export async function deleteDisciplineResult(formData: FormData) {
       .eq("discipline_id", result.discipline_id)
       .maybeSingle();
 
-    if (!assignment) return;
+    if (!assignment) {
+      redirect(`${back}?error=${encodeURIComponent("Нет доступа к этой дисциплине.")}`);
+    }
   }
 
-  await supabase.from("discipline_results").delete().eq("id", id);
+  const { error } = await supabase.from("discipline_results").delete().eq("id", id);
+  if (error) {
+    redirect(`${back}?error=${encodeURIComponent(error.message)}`);
+  }
+
   await revalidateAll();
+  redirect(`${back}?message=${encodeURIComponent("Запись удалена с табло.")}`);
 }
 
 export async function updateUserRole(formData: FormData) {
@@ -261,14 +310,21 @@ export async function updateUserRole(formData: FormData) {
   const role = String(formData.get("role") ?? "judge") as UserRole;
   const fullName = String(formData.get("full_name") ?? "").trim() || null;
 
-  if (!userId) return;
+  if (!userId) {
+    adminRedirect("/admin", "error", "Не указан пользователь.");
+  }
 
-  await supabase
+  const { error } = await supabase
     .from("profiles")
     .update({ role, full_name: fullName })
     .eq("id", userId);
 
+  if (error) {
+    adminRedirect("/admin", "error", error.message);
+  }
+
   await revalidateAll();
+  adminRedirect("/admin", "message", "Роль сохранена.");
 }
 
 export async function assignJudge(formData: FormData) {
@@ -278,24 +334,38 @@ export async function assignJudge(formData: FormData) {
   const disciplineId = String(formData.get("discipline_id") ?? "");
   const userId = String(formData.get("user_id") ?? "");
 
-  if (!disciplineId || !userId) return;
+  if (!disciplineId || !userId) {
+    adminRedirect("/admin", "error", "Выберите судью и дисциплину.");
+  }
 
-  await supabase.from("judge_assignments").upsert(
+  const { error } = await supabase.from("judge_assignments").upsert(
     { discipline_id: disciplineId, user_id: userId },
     { onConflict: "discipline_id,user_id" },
   );
 
+  if (error) {
+    adminRedirect("/admin", "error", error.message);
+  }
+
   await revalidateAll();
+  adminRedirect("/admin", "message", "Судья назначен.");
 }
 
 export async function removeJudgeAssignment(formData: FormData) {
   await requireProfile(["admin"]);
   const supabase = await createClient();
   const id = String(formData.get("id") ?? "");
-  if (!id) return;
+  if (!id) {
+    adminRedirect("/admin", "error", "Не указано назначение.");
+  }
 
-  await supabase.from("judge_assignments").delete().eq("id", id);
+  const { error } = await supabase.from("judge_assignments").delete().eq("id", id);
+  if (error) {
+    adminRedirect("/admin", "error", error.message);
+  }
+
   await revalidateAll();
+  adminRedirect("/admin", "message", "Назначение снято.");
 }
 
 export async function createUser(formData: FormData) {

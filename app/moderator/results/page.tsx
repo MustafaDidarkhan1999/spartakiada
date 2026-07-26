@@ -11,8 +11,13 @@ import {
 } from "@/components/ui";
 import { deleteDisciplineResult, saveDisciplineResult } from "@/app/actions";
 
-export default async function ModeratorResultsPage() {
+export default async function ModeratorResultsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string; message?: string }>;
+}) {
   const profile = await requireProfile(["admin", "moderator"]);
+  const params = await searchParams;
   const supabase = await createClient();
 
   const [{ data: results }, { data: teams }, { data: disciplines }] =
@@ -38,6 +43,17 @@ export default async function ModeratorResultsPage() {
         { href: "/tablo", label: "Табло" },
       ]}
     >
+      {params.message ? (
+        <p className="mb-4 rounded-lg border border-emerald-800 bg-emerald-950/50 px-4 py-3 text-sm text-emerald-300">
+          {params.message}
+        </p>
+      ) : null}
+      {params.error ? (
+        <p className="mb-4 rounded-lg border border-rose-800 bg-rose-950/50 px-4 py-3 text-sm text-rose-300">
+          {params.error}
+        </p>
+      ) : null}
+
       <Card className="mb-6">
         <p className="text-sm text-slate-400">
           Здесь все записи, которые влияют на табло. Можно изменить баллы/место
@@ -72,6 +88,7 @@ export default async function ModeratorResultsPage() {
                 </div>
                 <form action={deleteDisciplineResult}>
                   <input type="hidden" name="id" value={result.id} />
+                  <input type="hidden" name="return_to" value="/moderator/results" />
                   <Button type="submit" variant="danger">
                     Удалить с табло
                   </Button>
@@ -88,6 +105,7 @@ export default async function ModeratorResultsPage() {
                   value={result.discipline_id}
                 />
                 <input type="hidden" name="team_id" value={result.team_id} />
+                <input type="hidden" name="return_to" value="/moderator/results" />
                 <div>
                   <Label>Баллы</Label>
                   <Input

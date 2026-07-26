@@ -3,8 +3,13 @@ import { createClient } from "@/lib/supabase/server";
 import { AppShell, Button, Card, Input, Label } from "@/components/ui";
 import { deleteTeam, upsertTeam } from "@/app/actions";
 
-export default async function ModeratorTeamsPage() {
+export default async function ModeratorTeamsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string; message?: string }>;
+}) {
   const profile = await requireProfile(["admin", "moderator"]);
+  const params = await searchParams;
   const supabase = await createClient();
   const { data: teams } = await supabase
     .from("teams")
@@ -23,6 +28,17 @@ export default async function ModeratorTeamsPage() {
         { href: "/judge", label: "Оценки" },
       ]}
     >
+      {params.message ? (
+        <p className="mb-4 rounded-lg border border-emerald-800 bg-emerald-950/50 px-4 py-3 text-sm text-emerald-300">
+          {params.message}
+        </p>
+      ) : null}
+      {params.error ? (
+        <p className="mb-4 rounded-lg border border-rose-800 bg-rose-950/50 px-4 py-3 text-sm text-rose-300">
+          {params.error}
+        </p>
+      ) : null}
+
       <Card title="Добавить команду" className="mb-6">
         <form action={upsertTeam} className="grid gap-3 md:grid-cols-4">
           <div>

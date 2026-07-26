@@ -13,10 +13,13 @@ import { deleteDisciplineResult, saveDisciplineResult } from "@/app/actions";
 
 export default async function JudgeDisciplinePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ error?: string; message?: string }>;
 }) {
   const { id } = await params;
+  const flash = await searchParams;
   const profile = await requireProfile(["admin", "moderator", "judge"]);
   const supabase = await createClient();
 
@@ -51,6 +54,17 @@ export default async function JudgeDisciplinePage({
         { href: "/tablo", label: "Табло" },
       ]}
     >
+      {flash.message ? (
+        <p className="mb-4 rounded-lg border border-emerald-800 bg-emerald-950/50 px-4 py-3 text-sm text-emerald-300">
+          {flash.message}
+        </p>
+      ) : null}
+      {flash.error ? (
+        <p className="mb-4 rounded-lg border border-rose-800 bg-rose-950/50 px-4 py-3 text-sm text-rose-300">
+          {flash.error}
+        </p>
+      ) : null}
+
       <Card className="mb-6">
         <p className="text-sm text-slate-400">
           Введите баллы и место вручную. Автоматический расчёт победителей —
@@ -70,6 +84,7 @@ export default async function JudgeDisciplinePage({
               >
                 <input type="hidden" name="discipline_id" value={discipline.id} />
                 <input type="hidden" name="team_id" value={team.id} />
+                <input type="hidden" name="return_to" value={`/judge/${discipline.id}`} />
                 <div className="md:col-span-2">
                   <Label>Команда</Label>
                   <p className="text-lg font-medium">{team.name}</p>
@@ -111,6 +126,11 @@ export default async function JudgeDisciplinePage({
               {existing ? (
                 <form action={deleteDisciplineResult} className="mt-3">
                   <input type="hidden" name="id" value={existing.id} />
+                  <input
+                    type="hidden"
+                    name="return_to"
+                    value={`/judge/${discipline.id}`}
+                  />
                   <Button type="submit" variant="danger">
                     Удалить с табло
                   </Button>
