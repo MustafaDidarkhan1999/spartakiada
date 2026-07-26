@@ -220,6 +220,9 @@ create policy "Judge upsert assigned results" on public.discipline_results
 create policy "Judge update assigned results" on public.discipline_results
   for update using (public.is_judge_for_discipline(discipline_id));
 
+create policy "Judge delete assigned results" on public.discipline_results
+  for delete using (public.is_judge_for_discipline(discipline_id));
+
 -- Realtime
 alter publication supabase_realtime add table public.schedule_events;
 alter publication supabase_realtime add table public.discipline_results;

@@ -24,6 +24,7 @@ export default async function ModeratorPage() {
         { href: "/moderator/teams", label: "Команды" },
         { href: "/moderator/schedule", label: "Расписание" },
         { href: "/judge", label: "Оценки / места" },
+        { href: "/moderator/results", label: "Табло: правки" },
         { href: "/tablo", label: "Табло" },
         { href: "/schedule", label: "Публ. расписание" },
         ...(profile.role === "admin" ? [{ href: "/admin", label: "Админ" }] : []),
@@ -56,8 +57,14 @@ export default async function ModeratorPage() {
         </ul>
         <div className="mt-4 flex flex-wrap gap-3">
           <Link
-            href="/judge"
+            href="/moderator/results"
             className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-slate-950"
+          >
+            Редактировать / удалить с табло
+          </Link>
+          <Link
+            href="/judge"
+            className="rounded-lg border border-slate-700 px-4 py-2 text-sm"
           >
             Ввести оценки и места
           </Link>

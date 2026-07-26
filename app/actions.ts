@@ -173,6 +173,35 @@ export async function saveDisciplineResult(formData: FormData) {
   await revalidateAll();
 }
 
+export async function deleteDisciplineResult(formData: FormData) {
+  const profile = await requireProfile(["admin", "moderator", "judge"]);
+  const supabase = await createClient();
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  if (profile.role === "judge") {
+    const { data: result } = await supabase
+      .from("discipline_results")
+      .select("discipline_id")
+      .eq("id", id)
+      .maybeSingle();
+
+    if (!result) return;
+
+    const { data: assignment } = await supabase
+      .from("judge_assignments")
+      .select("id")
+      .eq("user_id", profile.id)
+      .eq("discipline_id", result.discipline_id)
+      .maybeSingle();
+
+    if (!assignment) return;
+  }
+
+  await supabase.from("discipline_results").delete().eq("id", id);
+  await revalidateAll();
+}
+
 export async function updateUserRole(formData: FormData) {
   await requireProfile(["admin"]);
   const supabase = await createClient();

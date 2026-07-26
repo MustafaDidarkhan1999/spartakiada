@@ -9,7 +9,7 @@ import {
   Label,
   Select,
 } from "@/components/ui";
-import { saveDisciplineResult } from "@/app/actions";
+import { deleteDisciplineResult, saveDisciplineResult } from "@/app/actions";
 
 export default async function JudgeDisciplinePage({
   params,
@@ -99,7 +99,7 @@ export default async function JudgeDisciplinePage({
                     defaultValue={existing?.status ?? "published"}
                   >
                     <option value="published">На табло</option>
-                    <option value="draft">Черновик</option>
+                    <option value="draft">Черновик (скрыть)</option>
                   </Select>
                 </div>
                 <div>
@@ -108,6 +108,14 @@ export default async function JudgeDisciplinePage({
                   </Button>
                 </div>
               </form>
+              {existing ? (
+                <form action={deleteDisciplineResult} className="mt-3">
+                  <input type="hidden" name="id" value={existing.id} />
+                  <Button type="submit" variant="danger">
+                    Удалить с табло
+                  </Button>
+                </form>
+              ) : null}
             </Card>
           );
         })}
