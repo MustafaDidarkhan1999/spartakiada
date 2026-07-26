@@ -21,7 +21,7 @@ export default async function JudgePage() {
         <AppShell
           title="Панель судьи"
           role={profile.role}
-          links={[{ href: "/live", label: "Live" }]}
+          links={[{ href: "/tablo", label: "Табло" }]}
         >
           <Card>
             <p className="text-slate-300">
@@ -42,7 +42,7 @@ export default async function JudgePage() {
       title="Панель судьи"
       role={profile.role}
       links={[
-        { href: "/live", label: "Live" },
+        { href: "/tablo", label: "Табло" },
         ...(profile.role === "admin"
           ? [{ href: "/admin", label: "Админ" }]
           : profile.role === "moderator"

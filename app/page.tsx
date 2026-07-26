@@ -14,28 +14,34 @@ export default async function HomePage() {
           Спартакиада 2026
         </h1>
         <p className="mt-4 max-w-2xl text-lg text-slate-400">
-          Система судейства, расписания и live-табло общего зачёта.
+          Система судейства, расписания и табло общего зачёта.
         </p>
 
         <div className="mt-10 flex flex-wrap gap-4">
           <Link
-            href="/live"
+            href="/tablo"
             className="rounded-xl bg-amber-500 px-6 py-3 font-semibold text-slate-950 hover:bg-amber-400"
           >
-            Live-табло
+            Табло
           </Link>
           <Link
-            href="/live/schedule"
+            href="/schedule"
             className="rounded-xl border border-slate-700 px-6 py-3 font-semibold hover:border-amber-500/50"
           >
             Расписание
+          </Link>
+          <Link
+            href="/display"
+            className="rounded-xl border border-slate-700 px-6 py-3 font-semibold hover:border-amber-500/50"
+          >
+            ТВ-режим
           </Link>
           {profile ? (
             <Link
               href={roleHomePath(profile.role)}
               className="rounded-xl border border-slate-700 px-6 py-3 font-semibold hover:border-amber-500/50"
             >
-              Кабинет ({profile.full_name ?? "войти в панель"})
+              Кабинет ({profile.full_name ?? "панель"})
             </Link>
           ) : (
             <Link

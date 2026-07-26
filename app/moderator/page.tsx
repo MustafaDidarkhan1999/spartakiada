@@ -23,7 +23,9 @@ export default async function ModeratorPage() {
       links={[
         { href: "/moderator/teams", label: "Команды" },
         { href: "/moderator/schedule", label: "Расписание" },
-        { href: "/live", label: "Live" },
+        { href: "/judge", label: "Оценки / места" },
+        { href: "/tablo", label: "Табло" },
+        { href: "/schedule", label: "Публ. расписание" },
         ...(profile.role === "admin" ? [{ href: "/admin", label: "Админ" }] : []),
       ]}
     >
@@ -42,25 +44,40 @@ export default async function ModeratorPage() {
         </Card>
       </div>
 
-      <Card title="Что можно делать" className="mt-6">
+      <Card title="Возможности модератора" className="mt-6">
         <ul className="list-disc space-y-2 pl-5 text-slate-300">
-          <li>Редактировать названия команд</li>
-          <li>Добавлять и менять расписание матчей</li>
-          <li>Менять статусы событий (ожидается / идёт / завершён)</li>
-          <li>Вручную править места команд по дисциплинам (через судейскую панель)</li>
+          <li>Команды и расписание матчей</li>
+          <li>Счёт матча прямо в расписании (отображается на ТВ)</li>
+          <li>
+            <strong className="text-amber-300">Оценки и места по дисциплинам</strong>{" "}
+            — как у судьи (для возрастных судей можно вводить самому)
+          </li>
+          <li>Статусы: ожидается / идёт / завершён</li>
         </ul>
-        <div className="mt-4 flex gap-3">
+        <div className="mt-4 flex flex-wrap gap-3">
           <Link
-            href="/moderator/teams"
+            href="/judge"
             className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-slate-950"
           >
-            Управление командами
+            Ввести оценки и места
           </Link>
           <Link
             href="/moderator/schedule"
             className="rounded-lg border border-slate-700 px-4 py-2 text-sm"
           >
-            Управление расписанием
+            Расписание и счёт
+          </Link>
+          <Link
+            href="/moderator/teams"
+            className="rounded-lg border border-slate-700 px-4 py-2 text-sm"
+          >
+            Команды
+          </Link>
+          <Link
+            href="/display"
+            className="rounded-lg border border-slate-700 px-4 py-2 text-sm"
+          >
+            ТВ-режим (слайды)
           </Link>
         </div>
       </Card>

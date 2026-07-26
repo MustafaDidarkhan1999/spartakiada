@@ -22,6 +22,9 @@ function adminRedirect(path: string, type: "message" | "error", text: string): n
 
 async function revalidateAll() {
   revalidatePath("/", "layout");
+  revalidatePath("/tablo");
+  revalidatePath("/schedule");
+  revalidatePath("/display");
   revalidatePath("/live");
   revalidatePath("/moderator");
   revalidatePath("/judge");
@@ -100,6 +103,9 @@ export async function upsertScheduleEvent(formData: FormData) {
   const status = String(formData.get("status") ?? "scheduled") as ScheduleStatus;
   const roundLabel = String(formData.get("round_label") ?? "").trim() || null;
   const notes = String(formData.get("notes") ?? "").trim() || null;
+  const scoreARaw = String(formData.get("score_a") ?? "").trim();
+  const scoreBRaw = String(formData.get("score_b") ?? "").trim();
+  const resultText = String(formData.get("result_text") ?? "").trim() || null;
 
   if (!startsAt) return;
 
@@ -113,6 +119,9 @@ export async function upsertScheduleEvent(formData: FormData) {
     status,
     round_label: roundLabel,
     notes,
+    score_a: scoreARaw === "" ? null : Number(scoreARaw),
+    score_b: scoreBRaw === "" ? null : Number(scoreBRaw),
+    result_text: resultText,
   };
 
   if (id) {

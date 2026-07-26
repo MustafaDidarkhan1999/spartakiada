@@ -48,7 +48,7 @@ export default async function JudgeDisciplinePage({
       role={profile.role}
       links={[
         { href: "/judge", label: "Мои дисциплины" },
-        { href: "/live", label: "Live" },
+        { href: "/tablo", label: "Табло" },
       ]}
     >
       <Card className="mb-6">

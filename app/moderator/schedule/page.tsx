@@ -36,7 +36,8 @@ export default async function ModeratorSchedulePage() {
       links={[
         { href: "/moderator", label: "Модератор" },
         { href: "/moderator/teams", label: "Команды" },
-        { href: "/live/schedule", label: "Live-расписание" },
+        { href: "/judge", label: "Оценки" },
+        { href: "/schedule", label: "Публичное расписание" },
       ]}
     >
       <Card title="Новое событие" className="mb-6">
@@ -99,6 +100,18 @@ export default async function ModeratorSchedulePage() {
                 </option>
               ))}
             </Select>
+          </div>
+          <div>
+            <Label>Счёт команды A</Label>
+            <Input name="score_a" type="number" step="0.01" />
+          </div>
+          <div>
+            <Label>Счёт команды B</Label>
+            <Input name="score_b" type="number" step="0.01" />
+          </div>
+          <div className="md:col-span-2">
+            <Label>Результат текстом (если не матч 1×1)</Label>
+            <Input name="result_text" placeholder="Например: 2:1 / победа по пенальти" />
           </div>
           <div className="md:col-span-2">
             <Label>Заметки</Label>
@@ -178,6 +191,31 @@ export default async function ModeratorSchedulePage() {
                     </option>
                   ))}
                 </Select>
+              </div>
+              <div>
+                <Label>Счёт A</Label>
+                <Input
+                  name="score_a"
+                  type="number"
+                  step="0.01"
+                  defaultValue={event.score_a ?? ""}
+                />
+              </div>
+              <div>
+                <Label>Счёт B</Label>
+                <Input
+                  name="score_b"
+                  type="number"
+                  step="0.01"
+                  defaultValue={event.score_b ?? ""}
+                />
+              </div>
+              <div className="md:col-span-2">
+                <Label>Результат текстом</Label>
+                <Input
+                  name="result_text"
+                  defaultValue={event.result_text ?? ""}
+                />
               </div>
               <div className="md:col-span-2">
                 <Label>Заметки</Label>

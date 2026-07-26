@@ -19,7 +19,8 @@ export default async function ModeratorTeamsPage() {
       links={[
         { href: "/moderator", label: "Модератор" },
         { href: "/moderator/schedule", label: "Расписание" },
-        { href: "/live", label: "Live" },
+        { href: "/tablo", label: "Табло" },
+        { href: "/judge", label: "Оценки" },
       ]}
     >
       <Card title="Добавить команду" className="mb-6">

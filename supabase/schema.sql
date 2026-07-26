@@ -58,6 +58,9 @@ create table public.schedule_events (
   status public.schedule_status not null default 'scheduled',
   round_label text,
   notes text,
+  score_a numeric,
+  score_b numeric,
+  result_text text,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

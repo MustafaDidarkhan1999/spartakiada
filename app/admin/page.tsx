@@ -61,7 +61,7 @@ export default async function AdminPage({
       links={[
         { href: "/moderator", label: "Модератор" },
         { href: "/judge", label: "Судья" },
-        { href: "/live", label: "Live" },
+        { href: "/tablo", label: "Табло" },
       ]}
     >
       {params.message ? (
