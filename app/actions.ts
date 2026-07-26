@@ -107,9 +107,13 @@ export async function upsertScheduleEvent(formData: FormData) {
   const scoreBRaw = String(formData.get("score_b") ?? "").trim();
   const resultText = String(formData.get("result_text") ?? "").trim() || null;
 
-  if (!startsAt) return;
+  if (!startsAt) {
+    redirect(
+      `/moderator/schedule?error=${encodeURIComponent("Укажите дату и время.")}`,
+    );
+  }
 
-  const payload = {
+  const basePayload = {
     discipline_id: disciplineId,
     team_a_id: teamAId,
     team_b_id: teamBId,
@@ -119,18 +123,56 @@ export async function upsertScheduleEvent(formData: FormData) {
     status,
     round_label: roundLabel,
     notes,
+  };
+
+  const payloadWithScores = {
+    ...basePayload,
     score_a: scoreARaw === "" ? null : Number(scoreARaw),
     score_b: scoreBRaw === "" ? null : Number(scoreBRaw),
     result_text: resultText,
   };
 
+  let errorMessage: string | null = null;
+
   if (id) {
-    await supabase.from("schedule_events").update(payload).eq("id", id);
+    const { error } = await supabase
+      .from("schedule_events")
+      .update(payloadWithScores)
+      .eq("id", id);
+    errorMessage = error?.message ?? null;
+
+    // Fallback if score columns were not migrated yet
+    if (errorMessage && /score_a|score_b|result_text|column/i.test(errorMessage)) {
+      const { error: fallbackError } = await supabase
+        .from("schedule_events")
+        .update(basePayload)
+        .eq("id", id);
+      errorMessage = fallbackError?.message ?? null;
+    }
   } else {
-    await supabase.from("schedule_events").insert(payload);
+    const { error } = await supabase
+      .from("schedule_events")
+      .insert(payloadWithScores);
+    errorMessage = error?.message ?? null;
+
+    if (errorMessage && /score_a|score_b|result_text|column/i.test(errorMessage)) {
+      const { error: fallbackError } = await supabase
+        .from("schedule_events")
+        .insert(basePayload);
+      errorMessage = fallbackError?.message ?? null;
+    }
+  }
+
+  if (errorMessage) {
+    redirect(
+      `/moderator/schedule?error=${encodeURIComponent(errorMessage)}`,
+    );
   }
 
   await revalidateAll();
+  redirect(
+    `/moderator/schedule?message=${encodeURIComponent(id ? "Событие обновлено." : "Событие добавлено.")}`,
+  );
 }
 
 export async function deleteScheduleEvent(formData: FormData) {
@@ -139,8 +181,17 @@ export async function deleteScheduleEvent(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (!id) return;
 
-  await supabase.from("schedule_events").delete().eq("id", id);
+  const { error } = await supabase.from("schedule_events").delete().eq("id", id);
+  if (error) {
+    redirect(
+      `/moderator/schedule?error=${encodeURIComponent(error.message)}`,
+    );
+  }
+
   await revalidateAll();
+  redirect(
+    `/moderator/schedule?message=${encodeURIComponent("Событие удалено.")}`,
+  );
 }
 
 export async function saveDisciplineResult(formData: FormData) {

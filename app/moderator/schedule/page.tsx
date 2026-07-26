@@ -18,8 +18,13 @@ function toLocalInputValue(iso: string) {
   return local.toISOString().slice(0, 16);
 }
 
-export default async function ModeratorSchedulePage() {
+export default async function ModeratorSchedulePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string; message?: string }>;
+}) {
   const profile = await requireProfile(["admin", "moderator"]);
+  const params = await searchParams;
   const supabase = await createClient();
 
   const [{ data: events }, { data: teams }, { data: disciplines }] =
@@ -40,6 +45,17 @@ export default async function ModeratorSchedulePage() {
         { href: "/schedule", label: "Публичное расписание" },
       ]}
     >
+      {params.message ? (
+        <p className="mb-4 rounded-lg border border-emerald-800 bg-emerald-950/50 px-4 py-3 text-sm text-emerald-300">
+          {params.message}
+        </p>
+      ) : null}
+      {params.error ? (
+        <p className="mb-4 rounded-lg border border-rose-800 bg-rose-950/50 px-4 py-3 text-sm text-rose-300">
+          {params.error}
+        </p>
+      ) : null}
+
       <Card title="Новое событие" className="mb-6">
         <form action={upsertScheduleEvent} className="grid gap-3 md:grid-cols-2">
           <div>
