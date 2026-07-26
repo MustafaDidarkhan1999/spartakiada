@@ -21,11 +21,12 @@ export default async function ModeratorSchedulePage({
   const params = await searchParams;
   const supabase = await createClient();
 
-  const [{ data: events }, { data: teams }, { data: disciplines }] =
+  const [{ data: events }, { data: teams }, { data: disciplines }, { data: groups }] =
     await Promise.all([
       supabase.from("schedule_events").select("*").order("starts_at"),
       supabase.from("teams").select("*").eq("is_active", true).order("sort_order"),
       supabase.from("disciplines").select("*").order("sort_order"),
+      supabase.from("tournament_groups").select("*").order("sort_order").order("name"),
     ]);
 
   return (
@@ -35,6 +36,7 @@ export default async function ModeratorSchedulePage({
       links={[
         { href: "/moderator", label: "Модератор" },
         { href: "/moderator/teams", label: "Команды" },
+        { href: "/moderator/groups", label: "Группы" },
         { href: "/judge", label: "Оценки" },
         { href: "/schedule", label: "Публичное расписание" },
       ]}
@@ -61,6 +63,20 @@ export default async function ModeratorSchedulePage({
                   {d.name}
                 </option>
               ))}
+            </Select>
+          </div>
+          <div>
+            <Label>Группа (футбол/волейбол)</Label>
+            <Select name="group_id">
+              <option value="">Без группы</option>
+              {(groups ?? []).map((g) => {
+                const disc = (disciplines ?? []).find((d) => d.id === g.discipline_id);
+                return (
+                  <option key={g.id} value={g.id}>
+                    {disc?.name ?? "?"} · {g.name}
+                  </option>
+                );
+              })}
             </Select>
           </div>
           <div>
@@ -147,6 +163,22 @@ export default async function ModeratorSchedulePage({
                       {d.name}
                     </option>
                   ))}
+                </Select>
+              </div>
+              <div>
+                <Label>Группа</Label>
+                <Select name="group_id" defaultValue={event.group_id ?? ""}>
+                  <option value="">Без группы</option>
+                  {(groups ?? []).map((g) => {
+                    const disc = (disciplines ?? []).find(
+                      (d) => d.id === g.discipline_id,
+                    );
+                    return (
+                      <option key={g.id} value={g.id}>
+                        {disc?.name ?? "?"} · {g.name}
+                      </option>
+                    );
+                  })}
                 </Select>
               </div>
               <div>

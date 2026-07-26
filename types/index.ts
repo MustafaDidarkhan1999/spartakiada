@@ -37,6 +37,7 @@ export type Discipline = {
 export type ScheduleEvent = {
   id: string;
   discipline_id: string | null;
+  group_id?: string | null;
   title: string | null;
   team_a_id: string | null;
   team_b_id: string | null;
@@ -53,6 +54,26 @@ export type ScheduleEvent = {
   discipline?: Discipline | null;
   team_a?: Team | null;
   team_b?: Team | null;
+};
+
+export type TournamentGroup = {
+  id: string;
+  discipline_id: string;
+  name: string;
+  max_teams: number;
+  sort_order: number;
+  created_at: string;
+  discipline?: Discipline | null;
+};
+
+export type GroupTeam = {
+  id: string;
+  group_id: string;
+  discipline_id: string;
+  team_id: string;
+  sort_order: number;
+  created_at: string;
+  team?: Team | null;
 };
 
 export type DisciplineResult = {

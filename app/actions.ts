@@ -31,6 +31,8 @@ async function revalidateAll() {
   revalidatePath("/moderator/results");
   revalidatePath("/moderator/teams");
   revalidatePath("/moderator/schedule");
+  revalidatePath("/moderator/groups");
+  revalidatePath("/groups");
   revalidatePath("/judge");
   revalidatePath("/admin");
 }
@@ -119,6 +121,7 @@ export async function upsertScheduleEvent(formData: FormData) {
 
   const id = String(formData.get("id") ?? "");
   const disciplineId = String(formData.get("discipline_id") ?? "") || null;
+  const groupId = String(formData.get("group_id") ?? "") || null;
   const teamAId = String(formData.get("team_a_id") ?? "") || null;
   const teamBId = String(formData.get("team_b_id") ?? "") || null;
   const title = String(formData.get("title") ?? "").trim() || null;
@@ -148,6 +151,7 @@ export async function upsertScheduleEvent(formData: FormData) {
 
   const basePayload = {
     discipline_id: disciplineId,
+    group_id: groupId,
     team_a_id: teamAId,
     team_b_id: teamBId,
     title,
@@ -174,8 +178,11 @@ export async function upsertScheduleEvent(formData: FormData) {
       .eq("id", id);
     errorMessage = error?.message ?? null;
 
-    // Fallback if score columns were not migrated yet
-    if (errorMessage && /score_a|score_b|result_text|column/i.test(errorMessage)) {
+    // Fallback if score/group columns were not migrated yet
+    if (
+      errorMessage &&
+      /score_a|score_b|result_text|group_id|column/i.test(errorMessage)
+    ) {
       const { error: fallbackError } = await supabase
         .from("schedule_events")
         .update(basePayload)
@@ -188,11 +195,18 @@ export async function upsertScheduleEvent(formData: FormData) {
       .insert(payloadWithScores);
     errorMessage = error?.message ?? null;
 
-    if (errorMessage && /score_a|score_b|result_text|column/i.test(errorMessage)) {
+    if (errorMessage && /score_a|score_b|result_text|group_id|column/i.test(errorMessage)) {
       const { error: fallbackError } = await supabase
         .from("schedule_events")
         .insert(basePayload);
       errorMessage = fallbackError?.message ?? null;
+      if (errorMessage && /group_id|column/i.test(errorMessage)) {
+        const { group_id: _removed, ...withoutGroup } = basePayload;
+        const { error: fallback2 } = await supabase
+          .from("schedule_events")
+          .insert(withoutGroup);
+        errorMessage = fallback2?.message ?? null;
+      }
     }
   }
 
@@ -224,6 +238,133 @@ export async function deleteScheduleEvent(formData: FormData) {
   await revalidateAll();
   redirect(
     `/moderator/schedule?message=${encodeURIComponent("Событие удалено.")}`,
+  );
+}
+
+export async function upsertTournamentGroup(formData: FormData) {
+  await requireProfile(["admin", "moderator"]);
+  const supabase = await createClient();
+
+  const id = String(formData.get("id") ?? "");
+  const disciplineId = String(formData.get("discipline_id") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  const maxTeams = Number(formData.get("max_teams") ?? 4);
+  const sortOrder = Number(formData.get("sort_order") ?? 0);
+
+  if (!disciplineId || !name) {
+    redirect(
+      `/moderator/groups?error=${encodeURIComponent("Укажите дисциплину и название группы.")}`,
+    );
+  }
+
+  const payload = {
+    discipline_id: disciplineId,
+    name,
+    max_teams: Number.isFinite(maxTeams) && maxTeams > 0 ? maxTeams : 4,
+    sort_order: Number.isFinite(sortOrder) ? sortOrder : 0,
+  };
+
+  const { error } = id
+    ? await supabase.from("tournament_groups").update(payload).eq("id", id)
+    : await supabase.from("tournament_groups").insert(payload);
+
+  if (error) {
+    redirect(`/moderator/groups?error=${encodeURIComponent(error.message)}`);
+  }
+
+  await revalidateAll();
+  redirect(
+    `/moderator/groups?message=${encodeURIComponent(id ? "Группа обновлена." : "Группа создана.")}`,
+  );
+}
+
+export async function deleteTournamentGroup(formData: FormData) {
+  await requireProfile(["admin", "moderator"]);
+  const supabase = await createClient();
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  const { error } = await supabase.from("tournament_groups").delete().eq("id", id);
+  if (error) {
+    redirect(`/moderator/groups?error=${encodeURIComponent(error.message)}`);
+  }
+
+  await revalidateAll();
+  redirect(
+    `/moderator/groups?message=${encodeURIComponent("Группа удалена.")}`,
+  );
+}
+
+export async function addTeamToGroup(formData: FormData) {
+  await requireProfile(["admin", "moderator"]);
+  const supabase = await createClient();
+
+  const groupId = String(formData.get("group_id") ?? "");
+  const teamId = String(formData.get("team_id") ?? "");
+
+  if (!groupId || !teamId) {
+    redirect(
+      `/moderator/groups?error=${encodeURIComponent("Выберите группу и команду.")}`,
+    );
+  }
+
+  const { data: group, error: groupError } = await supabase
+    .from("tournament_groups")
+    .select("id, discipline_id, max_teams")
+    .eq("id", groupId)
+    .single();
+
+  if (groupError || !group) {
+    redirect(
+      `/moderator/groups?error=${encodeURIComponent(groupError?.message ?? "Группа не найдена.")}`,
+    );
+  }
+
+  const { count } = await supabase
+    .from("group_teams")
+    .select("*", { count: "exact", head: true })
+    .eq("group_id", groupId);
+
+  if ((count ?? 0) >= group.max_teams) {
+    redirect(
+      `/moderator/groups?error=${encodeURIComponent(`В группе уже максимум ${group.max_teams} команд.`)}`,
+    );
+  }
+
+  const { error } = await supabase.from("group_teams").insert({
+    group_id: groupId,
+    discipline_id: group.discipline_id,
+    team_id: teamId,
+    sort_order: (count ?? 0) + 1,
+  });
+
+  if (error) {
+    const msg = error.message.includes("duplicate")
+      ? "Эта команда уже стоит в группе этой дисциплины."
+      : error.message;
+    redirect(`/moderator/groups?error=${encodeURIComponent(msg)}`);
+  }
+
+  await revalidateAll();
+  redirect(
+    `/moderator/groups?message=${encodeURIComponent("Команда добавлена в группу.")}`,
+  );
+}
+
+export async function removeTeamFromGroup(formData: FormData) {
+  await requireProfile(["admin", "moderator"]);
+  const supabase = await createClient();
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+
+  const { error } = await supabase.from("group_teams").delete().eq("id", id);
+  if (error) {
+    redirect(`/moderator/groups?error=${encodeURIComponent(error.message)}`);
+  }
+
+  await revalidateAll();
+  redirect(
+    `/moderator/groups?message=${encodeURIComponent("Команда убрана из группы.")}`,
   );
 }
 

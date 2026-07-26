@@ -2,7 +2,13 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import type { Discipline, DisciplineResult, ScheduleEvent, Team } from "@/types";
+import type {
+  Discipline,
+  DisciplineResult,
+  ScheduleEvent,
+  Team,
+  TournamentGroup,
+} from "@/types";
 import { computeOverallStandings } from "@/lib/standings";
 import { SCHEDULE_STATUS_LABELS } from "@/types";
 import { eventDateInAlmaty, formatEventDateTime } from "@/lib/datetime";
@@ -107,17 +113,20 @@ export function ScheduleBoard({
   initialEvents,
   initialTeams,
   initialDisciplines,
+  initialGroups = [],
   showFilters = true,
   compact = false,
 }: {
   initialEvents: ScheduleEvent[];
   initialTeams: Team[];
   initialDisciplines: Discipline[];
+  initialGroups?: TournamentGroup[];
   showFilters?: boolean;
   compact?: boolean;
 }) {
   const [events, setEvents] = useState(initialEvents);
   const [disciplineId, setDisciplineId] = useState("");
+  const [groupId, setGroupId] = useState("");
   const [teamId, setTeamId] = useState("");
   const [status, setStatus] = useState("");
   const [date, setDate] = useState("");
@@ -130,6 +139,10 @@ export function ScheduleBoard({
   const disciplineMap = useMemo(
     () => new Map(initialDisciplines.map((d) => [d.id, d.name])),
     [initialDisciplines],
+  );
+  const groupMap = useMemo(
+    () => new Map(initialGroups.map((g) => [g.id, g.name])),
+    [initialGroups],
   );
 
   useEffect(() => {
@@ -156,6 +169,7 @@ export function ScheduleBoard({
 
   const filtered = events.filter((event) => {
     if (disciplineId && event.discipline_id !== disciplineId) return false;
+    if (groupId && event.group_id !== groupId) return false;
     if (
       teamId &&
       event.team_a_id !== teamId &&
@@ -180,7 +194,7 @@ export function ScheduleBoard({
   return (
     <div className="space-y-4">
       {showFilters ? (
-        <div className="grid gap-3 rounded-xl border border-slate-800 bg-slate-900/50 p-4 md:grid-cols-5">
+        <div className="grid gap-3 rounded-xl border border-slate-800 bg-slate-900/50 p-4 md:grid-cols-3 lg:grid-cols-6">
           <select
             value={disciplineId}
             onChange={(e) => setDisciplineId(e.target.value)}
@@ -190,6 +204,18 @@ export function ScheduleBoard({
             {initialDisciplines.map((d) => (
               <option key={d.id} value={d.id}>
                 {d.name}
+              </option>
+            ))}
+          </select>
+          <select
+            value={groupId}
+            onChange={(e) => setGroupId(e.target.value)}
+            className="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm"
+          >
+            <option value="">Все группы</option>
+            {initialGroups.map((g) => (
+              <option key={g.id} value={g.id}>
+                {(disciplineMap.get(g.discipline_id) ?? "") + " · " + g.name}
               </option>
             ))}
           </select>
@@ -244,6 +270,9 @@ export function ScheduleBoard({
             const discipline = event.discipline_id
               ? disciplineMap.get(event.discipline_id)
               : null;
+            const groupName = event.group_id
+              ? groupMap.get(event.group_id)
+              : null;
             const score = formatScore(event);
 
             return (
@@ -262,6 +291,7 @@ export function ScheduleBoard({
                 <div>
                   <p className="text-sm text-slate-400">
                     {discipline ?? event.title ?? "Событие"}
+                    {groupName ? ` · группа ${groupName}` : ""}
                     {event.round_label ? ` · ${event.round_label}` : ""}
                   </p>
                   <p className="text-lg font-medium">

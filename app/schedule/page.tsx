@@ -5,11 +5,12 @@ import { PublicNav } from "@/components/public-nav";
 export default async function SchedulePage() {
   const supabase = await createClient();
 
-  const [{ data: events }, { data: teams }, { data: disciplines }] =
+  const [{ data: events }, { data: teams }, { data: disciplines }, { data: groups }] =
     await Promise.all([
       supabase.from("schedule_events").select("*").order("starts_at"),
       supabase.from("teams").select("*").eq("is_active", true).order("sort_order"),
       supabase.from("disciplines").select("*").eq("is_active", true).order("sort_order"),
+      supabase.from("tournament_groups").select("*").order("sort_order").order("name"),
     ]);
 
   return (
@@ -28,6 +29,7 @@ export default async function SchedulePage() {
           <PublicNav
             extraLinks={[
               { href: "/tablo", label: "Табло" },
+              { href: "/groups", label: "Группы" },
               { href: "/display", label: "ТВ-режим" },
               { href: "/", label: "Главная" },
             ]}
@@ -40,6 +42,7 @@ export default async function SchedulePage() {
           initialEvents={events ?? []}
           initialTeams={teams ?? []}
           initialDisciplines={disciplines ?? []}
+          initialGroups={groups ?? []}
           showFilters
         />
       </main>

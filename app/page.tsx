@@ -31,6 +31,12 @@ export default async function HomePage() {
             Расписание
           </Link>
           <Link
+            href="/groups"
+            className="rounded-xl border border-slate-700 px-6 py-3 font-semibold hover:border-amber-500/50"
+          >
+            Группы
+          </Link>
+          <Link
             href="/display"
             className="rounded-xl border border-slate-700 px-6 py-3 font-semibold hover:border-amber-500/50"
           >

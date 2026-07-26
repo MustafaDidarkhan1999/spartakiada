@@ -22,6 +22,7 @@ export default async function ModeratorPage() {
       role={profile.role}
       links={[
         { href: "/moderator/teams", label: "Команды" },
+        { href: "/moderator/groups", label: "Группы" },
         { href: "/moderator/schedule", label: "Расписание" },
         { href: "/judge", label: "Оценки / места" },
         { href: "/moderator/results", label: "Табло: правки" },
@@ -48,6 +49,7 @@ export default async function ModeratorPage() {
       <Card title="Возможности модератора" className="mt-6">
         <ul className="list-disc space-y-2 pl-5 text-slate-300">
           <li>Команды и расписание матчей</li>
+          <li>Группы A/B/C/D (и A1, A2…) для футбола и волейбола</li>
           <li>Счёт матча прямо в расписании (отображается на ТВ)</li>
           <li>
             <strong className="text-amber-300">Оценки и места по дисциплинам</strong>{" "}
@@ -67,6 +69,12 @@ export default async function ModeratorPage() {
             className="rounded-lg border border-slate-700 px-4 py-2 text-sm"
           >
             Ввести оценки и места
+          </Link>
+          <Link
+            href="/moderator/groups"
+            className="rounded-lg border border-slate-700 px-4 py-2 text-sm"
+          >
+            Группы футбол / волейбол
           </Link>
           <Link
             href="/moderator/schedule"
