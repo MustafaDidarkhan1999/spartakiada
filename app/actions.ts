@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireProfile } from "@/lib/auth";
 import type { ScheduleStatus, UserRole } from "@/types";
+import { almatyLocalInputToUtcIso } from "@/lib/datetime";
 
 async function getAppOrigin() {
   const headerList = await headers();
@@ -136,12 +137,21 @@ export async function upsertScheduleEvent(formData: FormData) {
     );
   }
 
+  let startsAtIso: string;
+  try {
+    startsAtIso = almatyLocalInputToUtcIso(startsAt);
+  } catch {
+    redirect(
+      `/moderator/schedule?error=${encodeURIComponent("Некорректная дата/время.")}`,
+    );
+  }
+
   const basePayload = {
     discipline_id: disciplineId,
     team_a_id: teamAId,
     team_b_id: teamBId,
     title,
-    starts_at: new Date(startsAt).toISOString(),
+    starts_at: startsAtIso,
     location,
     status,
     round_label: roundLabel,

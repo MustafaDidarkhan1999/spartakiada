@@ -5,14 +5,10 @@ import { createClient } from "@/lib/supabase/client";
 import type { Discipline, DisciplineResult, ScheduleEvent, Team } from "@/types";
 import { computeOverallStandings } from "@/lib/standings";
 import { SCHEDULE_STATUS_LABELS } from "@/types";
+import { eventDateInAlmaty, formatEventDateTime } from "@/lib/datetime";
 
 function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat("ru-RU", {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(new Date(value));
+  return formatEventDateTime(value);
 }
 
 function formatScore(event: ScheduleEvent) {
@@ -169,11 +165,7 @@ export function ScheduleBoard({
     }
     if (status && event.status !== status) return false;
     if (date) {
-      const local = new Date(event.starts_at);
-      const y = local.getFullYear();
-      const m = String(local.getMonth() + 1).padStart(2, "0");
-      const d = String(local.getDate()).padStart(2, "0");
-      if (`${y}-${m}-${d}` !== date) return false;
+      if (eventDateInAlmaty(event.starts_at) !== date) return false;
     }
     if (onlyWithResult) {
       const hasResult =

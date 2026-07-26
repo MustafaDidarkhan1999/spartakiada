@@ -10,13 +10,7 @@ import {
 } from "@/components/ui";
 import { SCHEDULE_STATUS_LABELS } from "@/types";
 import { deleteScheduleEvent, upsertScheduleEvent } from "@/app/actions";
-
-function toLocalInputValue(iso: string) {
-  const date = new Date(iso);
-  const offset = date.getTimezoneOffset();
-  const local = new Date(date.getTime() - offset * 60_000);
-  return local.toISOString().slice(0, 16);
-}
+import { utcIsoToAlmatyLocalInput } from "@/lib/datetime";
 
 export default async function ModeratorSchedulePage({
   searchParams,
@@ -96,7 +90,7 @@ export default async function ModeratorSchedulePage({
             </Select>
           </div>
           <div>
-            <Label>Дата и время</Label>
+            <Label>Дата и время (время Казахстана, Алматы)</Label>
             <Input name="starts_at" type="datetime-local" required />
           </div>
           <div>
@@ -182,11 +176,11 @@ export default async function ModeratorSchedulePage({
                 </Select>
               </div>
               <div>
-                <Label>Дата и время</Label>
+                <Label>Дата и время (Алматы)</Label>
                 <Input
                   name="starts_at"
                   type="datetime-local"
-                  defaultValue={toLocalInputValue(event.starts_at)}
+                  defaultValue={utcIsoToAlmatyLocalInput(event.starts_at)}
                   required
                 />
               </div>
