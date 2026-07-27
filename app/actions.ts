@@ -133,6 +133,8 @@ export async function upsertScheduleEvent(formData: FormData) {
   const scoreARaw = String(formData.get("score_a") ?? "").trim();
   const scoreBRaw = String(formData.get("score_b") ?? "").trim();
   const resultText = String(formData.get("result_text") ?? "").trim() || null;
+  const weightRaw = String(formData.get("weight_kg") ?? "").trim();
+  const isAbsoluteRaw = String(formData.get("is_absolute") ?? "").trim();
 
   if (!startsAt) {
     redirect(
@@ -151,7 +153,6 @@ export async function upsertScheduleEvent(formData: FormData) {
 
   const basePayload = {
     discipline_id: disciplineId,
-    group_id: groupId,
     team_a_id: teamAId,
     team_b_id: teamBId,
     title,
@@ -162,52 +163,43 @@ export async function upsertScheduleEvent(formData: FormData) {
     notes,
   };
 
-  const payloadWithScores = {
+  const withGroup = {
     ...basePayload,
+    group_id: groupId,
+  };
+
+  const withScores = {
+    ...withGroup,
     score_a: scoreARaw === "" ? null : Number(scoreARaw),
     score_b: scoreBRaw === "" ? null : Number(scoreBRaw),
     result_text: resultText,
   };
 
+  const withWeight = {
+    ...withScores,
+    weight_kg: weightRaw === "" ? null : Number(weightRaw),
+    is_absolute: ["true", "1", "on"].includes(isAbsoluteRaw.toLowerCase()),
+  };
+
+  // Prefer full payload; strip newer columns only if DB migration not applied yet.
+  // Important: never drop scores just because weight columns are missing.
+  const payloads = [withWeight, withScores, withGroup, basePayload];
+
   let errorMessage: string | null = null;
 
-  if (id) {
-    const { error } = await supabase
-      .from("schedule_events")
-      .update(payloadWithScores)
-      .eq("id", id);
-    errorMessage = error?.message ?? null;
+  for (const payload of payloads) {
+    const result = id
+      ? await supabase.from("schedule_events").update(payload).eq("id", id)
+      : await supabase.from("schedule_events").insert(payload);
 
-    // Fallback if score/group columns were not migrated yet
-    if (
-      errorMessage &&
-      /score_a|score_b|result_text|group_id|column/i.test(errorMessage)
-    ) {
-      const { error: fallbackError } = await supabase
-        .from("schedule_events")
-        .update(basePayload)
-        .eq("id", id);
-      errorMessage = fallbackError?.message ?? null;
-    }
-  } else {
-    const { error } = await supabase
-      .from("schedule_events")
-      .insert(payloadWithScores);
-    errorMessage = error?.message ?? null;
+    errorMessage = result.error?.message ?? null;
+    if (!errorMessage) break;
 
-    if (errorMessage && /score_a|score_b|result_text|group_id|column/i.test(errorMessage)) {
-      const { error: fallbackError } = await supabase
-        .from("schedule_events")
-        .insert(basePayload);
-      errorMessage = fallbackError?.message ?? null;
-      if (errorMessage && /group_id|column/i.test(errorMessage)) {
-        const { group_id: _removed, ...withoutGroup } = basePayload;
-        const { error: fallback2 } = await supabase
-          .from("schedule_events")
-          .insert(withoutGroup);
-        errorMessage = fallback2?.message ?? null;
-      }
-    }
+    const missingColumn =
+      /score_a|score_b|result_text|group_id|weight_kg|is_absolute|column|schema cache/i.test(
+        errorMessage,
+      );
+    if (!missingColumn) break;
   }
 
   if (errorMessage) {

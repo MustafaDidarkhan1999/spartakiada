@@ -49,6 +49,8 @@ export type ScheduleEvent = {
   score_a: number | null;
   score_b: number | null;
   result_text: string | null;
+  weight_kg: number | null;
+  is_absolute: boolean;
   created_at: string;
   updated_at: string;
   discipline?: Discipline | null;

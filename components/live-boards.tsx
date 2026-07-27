@@ -28,6 +28,12 @@ function formatScore(event: ScheduleEvent) {
   return null;
 }
 
+function formatWeightCategory(event: ScheduleEvent) {
+  if (event.is_absolute) return "Абсолютка";
+  if (event.weight_kg != null) return `${event.weight_kg} кг`;
+  return null;
+}
+
 export function StandingsBoard({
   initialTeams,
   initialDisciplines,
@@ -274,6 +280,7 @@ export function ScheduleBoard({
               ? groupMap.get(event.group_id)
               : null;
             const score = formatScore(event);
+            const weightCategory = formatWeightCategory(event);
 
             return (
               <div
@@ -292,6 +299,7 @@ export function ScheduleBoard({
                   <p className="text-sm text-slate-400">
                     {discipline ?? event.title ?? "Событие"}
                     {groupName ? ` · группа ${groupName}` : ""}
+                    {weightCategory ? ` · ${weightCategory}` : ""}
                     {event.round_label ? ` · ${event.round_label}` : ""}
                   </p>
                   <p className="text-lg font-medium">

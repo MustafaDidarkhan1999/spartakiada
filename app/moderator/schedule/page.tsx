@@ -118,6 +118,17 @@ export default async function ModeratorSchedulePage({
             <Input name="round_label" placeholder="Группа A / 1/4 финала" />
           </div>
           <div>
+            <Label>Вес (кг)</Label>
+            <Input name="weight_kg" type="number" step="0.1" placeholder="70" />
+          </div>
+          <div>
+            <Label>Весовая категория</Label>
+            <label className="mt-1 flex items-center gap-2 text-sm text-slate-300">
+              <input type="checkbox" name="is_absolute" value="true" />
+              Абсолютка
+            </label>
+          </div>
+          <div>
             <Label>Статус</Label>
             <Select name="status" defaultValue="scheduled">
               {Object.entries(SCHEDULE_STATUS_LABELS).map(([value, label]) => (
@@ -223,6 +234,27 @@ export default async function ModeratorSchedulePage({
               <div>
                 <Label>Раунд</Label>
                 <Input name="round_label" defaultValue={event.round_label ?? ""} />
+              </div>
+              <div>
+                <Label>Вес (кг)</Label>
+                <Input
+                  name="weight_kg"
+                  type="number"
+                  step="0.1"
+                  defaultValue={event.weight_kg ?? ""}
+                />
+              </div>
+              <div>
+                <Label>Весовая категория</Label>
+                <label className="mt-1 flex items-center gap-2 text-sm text-slate-300">
+                  <input
+                    type="checkbox"
+                    name="is_absolute"
+                    value="true"
+                    defaultChecked={event.is_absolute ?? false}
+                  />
+                  Абсолютка
+                </label>
               </div>
               <div>
                 <Label>Статус</Label>

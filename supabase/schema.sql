@@ -61,6 +61,8 @@ create table public.schedule_events (
   score_a numeric,
   score_b numeric,
   result_text text,
+  weight_kg numeric,
+  is_absolute boolean not null default false,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
