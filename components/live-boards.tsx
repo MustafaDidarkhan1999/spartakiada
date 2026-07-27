@@ -25,6 +25,8 @@ function formatScore(event: ScheduleEvent) {
   if (event.score_a != null || event.score_b != null) {
     return `${event.score_a ?? "—"} : ${event.score_b ?? "—"}`;
   }
+  const fromNotes = event.notes?.match(/Счёт:\s*([^|]+)/i)?.[1]?.trim();
+  if (fromNotes) return fromNotes;
   return null;
 }
 
@@ -191,7 +193,8 @@ export function ScheduleBoard({
       const hasResult =
         event.result_text ||
         event.score_a != null ||
-        event.score_b != null;
+        event.score_b != null ||
+        /Счёт:\s*/i.test(event.notes ?? "");
       if (!hasResult) return false;
     }
     return true;

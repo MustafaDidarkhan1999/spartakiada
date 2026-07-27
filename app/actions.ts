@@ -168,11 +168,38 @@ export async function upsertScheduleEvent(formData: FormData) {
     group_id: groupId,
   };
 
+  const scoreA = scoreARaw === "" ? null : Number(scoreARaw);
+  const scoreB = scoreBRaw === "" ? null : Number(scoreBRaw);
+  const scoreLabel =
+    scoreA != null && scoreB != null ? `${scoreA} : ${scoreB}` : null;
+  const synthesizedResult = resultText || scoreLabel;
+
+  // Keep a visible score even if score_*/result_text columns are missing.
+  const notesWithoutScore = (notes ?? "")
+    .replace(/\s*\|?\s*Счёт:\s*[^|]+/gi, "")
+    .trim();
+  const notesWithScore =
+    scoreLabel
+      ? [notesWithoutScore, `Счёт: ${scoreLabel}`].filter(Boolean).join(" | ")
+      : notes;
+
   const withScores = {
     ...withGroup,
-    score_a: scoreARaw === "" ? null : Number(scoreARaw),
-    score_b: scoreBRaw === "" ? null : Number(scoreBRaw),
+    score_a: scoreA,
+    score_b: scoreB,
     result_text: resultText,
+  };
+
+  // If score_* columns are missing, still keep the score visible via result_text.
+  const withResultTextOnly = {
+    ...withGroup,
+    result_text: synthesizedResult,
+  };
+
+  // Last resort before dropping scores entirely: put them into notes.
+  const withNotesScore = {
+    ...withGroup,
+    notes: notesWithScore || null,
   };
 
   const withWeight = {
@@ -182,10 +209,18 @@ export async function upsertScheduleEvent(formData: FormData) {
   };
 
   // Prefer full payload; strip newer columns only if DB migration not applied yet.
-  // Important: never drop scores just because weight columns are missing.
-  const payloads = [withWeight, withScores, withGroup, basePayload];
+  // Important: never drop scores just because weight/score columns are missing.
+  const payloads = [
+    withWeight,
+    withScores,
+    withResultTextOnly,
+    withNotesScore,
+    withGroup,
+    basePayload,
+  ];
 
   let errorMessage: string | null = null;
+  let savedMode: "columns" | "result_text" | "notes" | "none" = "none";
 
   for (const payload of payloads) {
     const result = id
@@ -193,7 +228,20 @@ export async function upsertScheduleEvent(formData: FormData) {
       : await supabase.from("schedule_events").insert(payload);
 
     errorMessage = result.error?.message ?? null;
-    if (!errorMessage) break;
+    if (!errorMessage) {
+      if ("score_a" in payload) savedMode = "columns";
+      else if ("result_text" in payload) savedMode = "result_text";
+      else if (
+        scoreLabel &&
+        typeof (payload as { notes?: string | null }).notes === "string" &&
+        (payload as { notes?: string | null }).notes?.includes(`Счёт: ${scoreLabel}`)
+      ) {
+        savedMode = "notes";
+      } else {
+        savedMode = "none";
+      }
+      break;
+    }
 
     const missingColumn =
       /score_a|score_b|result_text|group_id|weight_kg|is_absolute|column|schema cache/i.test(
@@ -209,9 +257,16 @@ export async function upsertScheduleEvent(formData: FormData) {
   }
 
   await revalidateAll();
-  redirect(
-    `/moderator/schedule?message=${encodeURIComponent(id ? "Событие обновлено." : "Событие добавлено.")}`,
-  );
+  const okMsg = id ? "Событие обновлено." : "Событие добавлено.";
+  const warnMsg =
+    savedMode === "columns"
+      ? okMsg
+      : savedMode === "result_text" || savedMode === "notes"
+        ? `${okMsg} Счёт сохранён временно. Выполните в Supabase SQL: supabase/migration_schedule_weight_absolute.sql`
+        : scoreLabel
+          ? `${okMsg} Счёт не сохранён: в БД нет колонок score_a/score_b/result_text. Выполните supabase/migration_schedule_weight_absolute.sql`
+          : okMsg;
+  redirect(`/moderator/schedule?message=${encodeURIComponent(warnMsg)}`);
 }
 
 export async function deleteScheduleEvent(formData: FormData) {
