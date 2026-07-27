@@ -63,7 +63,7 @@ export default async function JudgePage() {
               href={`/judge/${discipline.id}`}
               className="mt-4 inline-block rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-slate-950"
             >
-              Ввести баллы и места
+              Ввести места
             </Link>
           </Card>
         ))}

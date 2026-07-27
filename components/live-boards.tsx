@@ -12,6 +12,7 @@ import type {
 import { computeOverallStandings } from "@/lib/standings";
 import { SCHEDULE_STATUS_LABELS } from "@/types";
 import { eventDateInAlmaty, formatEventDateTime } from "@/lib/datetime";
+import { getMatchScores } from "@/lib/match-score";
 
 function formatDateTime(value: string) {
   return formatEventDateTime(value);
@@ -19,14 +20,8 @@ function formatDateTime(value: string) {
 
 function formatScore(event: ScheduleEvent) {
   if (event.result_text) return event.result_text;
-  if (event.score_a != null && event.score_b != null) {
-    return `${event.score_a} : ${event.score_b}`;
-  }
-  if (event.score_a != null || event.score_b != null) {
-    return `${event.score_a ?? "—"} : ${event.score_b ?? "—"}`;
-  }
-  const fromNotes = event.notes?.match(/Счёт:\s*([^|]+)/i)?.[1]?.trim();
-  if (fromNotes) return fromNotes;
+  const scores = getMatchScores(event);
+  if (scores) return `${scores.a} : ${scores.b}`;
   return null;
 }
 
@@ -190,11 +185,7 @@ export function ScheduleBoard({
       if (eventDateInAlmaty(event.starts_at) !== date) return false;
     }
     if (onlyWithResult) {
-      const hasResult =
-        event.result_text ||
-        event.score_a != null ||
-        event.score_b != null ||
-        /Счёт:\s*/i.test(event.notes ?? "");
+      const hasResult = formatScore(event) != null;
       if (!hasResult) return false;
     }
     return true;

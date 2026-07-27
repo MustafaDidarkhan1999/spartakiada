@@ -25,7 +25,8 @@ export default async function TabloPage() {
             </p>
             <h1 className="text-2xl font-bold md:text-4xl">Табло</h1>
             <p className="text-sm text-slate-400">
-              Общий зачёт · меньшая сумма мест — выше
+              Общий зачёт: одна строка на команду · сумма мест по дисциплинам
+              (меньше — выше)
             </p>
           </div>
           <PublicNav

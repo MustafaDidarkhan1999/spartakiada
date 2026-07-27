@@ -67,8 +67,9 @@ export default async function JudgeDisciplinePage({
 
       <Card className="mb-6">
         <p className="text-sm text-slate-400">
-          Введите баллы и место вручную. Автоматический расчёт победителей —
-          в следующей версии.
+          Для каждой команды в этой дисциплине — одна запись: укажите{" "}
+          <span className="text-slate-200">место</span> (1, 2, 3…). Общий зачёт
+          на табло = сумма мест по всем дисциплинам (меньше — лучше).
         </p>
       </Card>
 
@@ -80,31 +81,25 @@ export default async function JudgeDisciplinePage({
             <Card key={team.id}>
               <form
                 action={saveDisciplineResult}
-                className="grid items-end gap-3 md:grid-cols-5"
+                className="grid items-end gap-3 md:grid-cols-4"
               >
                 <input type="hidden" name="discipline_id" value={discipline.id} />
                 <input type="hidden" name="team_id" value={team.id} />
                 <input type="hidden" name="return_to" value={`/judge/${discipline.id}`} />
+                {/* score hidden for now — overall tablo uses place only */}
+                <input type="hidden" name="score" value={existing?.score ?? ""} />
                 <div className="md:col-span-2">
                   <Label>Команда</Label>
                   <p className="text-lg font-medium">{team.name}</p>
                 </div>
                 <div>
-                  <Label>Баллы</Label>
-                  <Input
-                    name="score"
-                    type="number"
-                    step="0.01"
-                    defaultValue={existing?.score ?? ""}
-                  />
-                </div>
-                <div>
-                  <Label>Место</Label>
+                  <Label>Место в дисциплине</Label>
                   <Input
                     name="place"
                     type="number"
                     min={1}
                     defaultValue={existing?.place ?? ""}
+                    required
                   />
                 </div>
                 <div>
@@ -117,10 +112,8 @@ export default async function JudgeDisciplinePage({
                     <option value="draft">Черновик (скрыть)</option>
                   </Select>
                 </div>
-                <div>
-                  <Button type="submit" className="w-full">
-                    Сохранить
-                  </Button>
+                <div className="md:col-span-4">
+                  <Button type="submit">Сохранить</Button>
                 </div>
               </form>
               {existing ? (

@@ -56,8 +56,9 @@ export default async function ModeratorResultsPage({
 
       <Card className="mb-6">
         <p className="text-sm text-slate-400">
-          Здесь все записи, которые влияют на табло. Можно изменить баллы/место
-          или удалить строку — она сразу пропадёт из общего зачёта.
+          Здесь записи для общего зачёта: у каждой команды — по одной строке на
+          дисциплину (место). На публичном табло команды видны один раз, с суммой
+          мест.
         </p>
         <Link
           href="/judge"
@@ -97,7 +98,7 @@ export default async function ModeratorResultsPage({
 
               <form
                 action={saveDisciplineResult}
-                className="grid items-end gap-3 md:grid-cols-5"
+                className="grid items-end gap-3 md:grid-cols-4"
               >
                 <input
                   type="hidden"
@@ -106,15 +107,7 @@ export default async function ModeratorResultsPage({
                 />
                 <input type="hidden" name="team_id" value={result.team_id} />
                 <input type="hidden" name="return_to" value="/moderator/results" />
-                <div>
-                  <Label>Баллы</Label>
-                  <Input
-                    name="score"
-                    type="number"
-                    step="0.01"
-                    defaultValue={result.score ?? ""}
-                  />
-                </div>
+                <input type="hidden" name="score" value={result.score ?? ""} />
                 <div>
                   <Label>Место</Label>
                   <Input

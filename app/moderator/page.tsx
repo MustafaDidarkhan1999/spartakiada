@@ -52,8 +52,9 @@ export default async function ModeratorPage() {
           <li>Группы A/B/C/D (и A1, A2…) для футбола и волейбола</li>
           <li>Счёт матча прямо в расписании (отображается на ТВ)</li>
           <li>
-            <strong className="text-amber-300">Оценки и места по дисциплинам</strong>{" "}
-            — как у судьи (для возрастных судей можно вводить самому)
+            <strong className="text-amber-300">Места по дисциплинам</strong>{" "}
+            — как у судьи (для возрастных судей можно вводить самому). На табло
+            одна строка на команду = сумма мест.
           </li>
           <li>Статусы: ожидается / идёт / завершён</li>
         </ul>
@@ -68,7 +69,7 @@ export default async function ModeratorPage() {
             href="/judge"
             className="rounded-lg border border-slate-700 px-4 py-2 text-sm"
           >
-            Ввести оценки и места
+            Ввести места
           </Link>
           <Link
             href="/moderator/groups"
