@@ -38,6 +38,24 @@ export default async function SchedulePage() {
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-8">
+        <div className="mb-6 flex flex-wrap gap-3">
+          <a
+            href="https://challonge.com/ru/integracs2"
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-xl bg-amber-500 px-4 py-2 font-semibold text-slate-950 hover:bg-amber-400"
+          >
+            Киберспорт: сетка и расписание
+          </a>
+          <a
+            href="https://s2.chess-results.com/tnr1465326.aspx?lan=1&art=3&rd=1&SNode=S0"
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-xl border border-slate-700 px-4 py-2 font-semibold hover:border-amber-500/50"
+          >
+            Шахматы: турнирная таблица
+          </a>
+        </div>
         <ScheduleBoard
           initialEvents={events ?? []}
           initialTeams={teams ?? []}

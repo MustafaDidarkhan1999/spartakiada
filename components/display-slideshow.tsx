@@ -84,13 +84,33 @@ export function DisplaySlideshow({
             compact
           />
         ) : (
-          <ScheduleBoard
-            initialEvents={events}
-            initialTeams={teams}
-            initialDisciplines={disciplines}
-            showFilters={false}
-            compact
-          />
+          <div className="space-y-4">
+            <div className="flex flex-wrap gap-3">
+              <a
+                href="https://challonge.com/ru/integracs2"
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-amber-400"
+              >
+                Киберспорт: сетка и расписание
+              </a>
+              <a
+                href="https://s2.chess-results.com/tnr1465326.aspx?lan=1&art=3&rd=1&SNode=S0"
+                target="_blank"
+                rel="noreferrer"
+                className="rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold hover:border-amber-500/50"
+              >
+                Шахматы: турнирная таблица
+              </a>
+            </div>
+            <ScheduleBoard
+              initialEvents={events}
+              initialTeams={teams}
+              initialDisciplines={disciplines}
+              showFilters={false}
+              compact
+            />
+          </div>
         )}
       </main>
     </div>
