@@ -151,6 +151,29 @@ export async function upsertScheduleEvent(formData: FormData) {
     );
   }
 
+  // If group is empty but both teams share a group in this discipline, fill it.
+  let resolvedGroupId = groupId;
+  if (!resolvedGroupId && disciplineId && teamAId && teamBId) {
+    const { data: memberships } = await supabase
+      .from("group_teams")
+      .select("group_id, team_id")
+      .eq("discipline_id", disciplineId)
+      .in("team_id", [teamAId, teamBId]);
+
+    const groupsOfA = new Set(
+      (memberships ?? [])
+        .filter((m) => m.team_id === teamAId)
+        .map((m) => m.group_id),
+    );
+    const shared = (memberships ?? [])
+      .filter((m) => m.team_id === teamBId && groupsOfA.has(m.group_id))
+      .map((m) => m.group_id);
+
+    if (shared.length === 1) {
+      resolvedGroupId = shared[0];
+    }
+  }
+
   const basePayload = {
     discipline_id: disciplineId,
     team_a_id: teamAId,
@@ -165,7 +188,7 @@ export async function upsertScheduleEvent(formData: FormData) {
 
   const withGroup = {
     ...basePayload,
-    group_id: groupId,
+    group_id: resolvedGroupId,
   };
 
   const scoreA = scoreARaw === "" ? null : Number(scoreARaw);
