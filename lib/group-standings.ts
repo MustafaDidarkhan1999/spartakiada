@@ -45,11 +45,27 @@ export function computeGroupStandings(
     });
   }
 
+  const memberIdSet = new Set(memberIds);
+
   const relevant = events.filter((event) => {
-    if (event.group_id !== group.id) return false;
     if (event.status === "cancelled" || event.status === "postponed") return false;
     if (!event.team_a_id || !event.team_b_id) return false;
-    return getMatchScores(event) != null;
+    if (getMatchScores(event) == null) return false;
+
+    // Discipline must match the group (when set on the event).
+    if (
+      event.discipline_id != null &&
+      event.discipline_id !== group.discipline_id
+    ) {
+      return false;
+    }
+
+    const bothInGroup =
+      memberIdSet.has(event.team_a_id) && memberIdSet.has(event.team_b_id);
+
+    // Explicit group on the match wins; otherwise infer from roster.
+    if (event.group_id != null) return event.group_id === group.id;
+    return bothInGroup;
   });
 
   for (const event of relevant) {
