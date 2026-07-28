@@ -260,7 +260,7 @@ insert into public.teams (name, sort_order) values
   ('Ordabasy', 13),
   ('Prime', 14),
   ('Karabatan', 15),
-  ('GasStream', 16),
+  ('Gas Stream', 16),
   ('ERG team', 17),
   ('Pink Panther', 18);
 
