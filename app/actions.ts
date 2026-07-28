@@ -457,6 +457,78 @@ export async function saveDisciplineResult(formData: FormData) {
   redirect(`${back}?message=${encodeURIComponent("Результат сохранён.")}`);
 }
 
+/** Save all discipline places for one team (moderator team card). */
+export async function saveTeamResults(formData: FormData) {
+  const profile = await requireProfile(["admin", "moderator"]);
+  const supabase = await createClient();
+
+  const teamId = String(formData.get("team_id") ?? "");
+  if (!teamId) {
+    redirect(
+      `/moderator/results?error=${encodeURIComponent("Не указана команда.")}`,
+    );
+  }
+
+  const back = `/moderator/results/${teamId}`;
+  const { data: disciplines, error: disciplinesError } = await supabase
+    .from("disciplines")
+    .select("id, counts_to_overall")
+    .eq("is_active", true);
+
+  if (disciplinesError) {
+    redirect(`${back}?error=${encodeURIComponent(disciplinesError.message)}`);
+  }
+
+  for (const discipline of disciplines ?? []) {
+    const placeRaw = String(formData.get(`place_${discipline.id}`) ?? "").trim();
+    const status = String(
+      formData.get(`status_${discipline.id}`) ?? "published",
+    );
+    const existingId = String(
+      formData.get(`result_id_${discipline.id}`) ?? "",
+    ).trim();
+
+    if (placeRaw === "") {
+      if (existingId) {
+        const { error } = await supabase
+          .from("discipline_results")
+          .delete()
+          .eq("id", existingId)
+          .eq("team_id", teamId);
+        if (error) {
+          redirect(`${back}?error=${encodeURIComponent(error.message)}`);
+        }
+      }
+      continue;
+    }
+
+    const place = Number(placeRaw);
+    if (!Number.isFinite(place) || place < 1) {
+      redirect(
+        `${back}?error=${encodeURIComponent("Место должно быть числом ≥ 1.")}`,
+      );
+    }
+
+    const { error } = await supabase.from("discipline_results").upsert(
+      {
+        discipline_id: discipline.id,
+        team_id: teamId,
+        place,
+        status,
+        entered_by: profile.id,
+      },
+      { onConflict: "discipline_id,team_id" },
+    );
+
+    if (error) {
+      redirect(`${back}?error=${encodeURIComponent(error.message)}`);
+    }
+  }
+
+  await revalidateAll();
+  redirect(`${back}?message=${encodeURIComponent("Места команды сохранены.")}`);
+}
+
 export async function deleteDisciplineResult(formData: FormData) {
   const profile = await requireProfile(["admin", "moderator", "judge"]);
   const supabase = await createClient();

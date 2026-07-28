@@ -1,15 +1,8 @@
 import Link from "next/link";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import {
-  AppShell,
-  Button,
-  Card,
-  Input,
-  Label,
-  Select,
-} from "@/components/ui";
-import { deleteDisciplineResult, saveDisciplineResult } from "@/app/actions";
+import { AppShell, Card } from "@/components/ui";
+import { computeOverallStandings } from "@/lib/standings";
 
 export default async function ModeratorResultsPage({
   searchParams,
@@ -22,25 +15,48 @@ export default async function ModeratorResultsPage({
 
   const [{ data: results }, { data: teams }, { data: disciplines }] =
     await Promise.all([
-      supabase
-        .from("discipline_results")
-        .select("*")
-        .order("updated_at", { ascending: false }),
+      supabase.from("discipline_results").select("*"),
       supabase.from("teams").select("*").eq("is_active", true).order("sort_order"),
-      supabase.from("disciplines").select("*").order("sort_order"),
+      supabase
+        .from("disciplines")
+        .select("*")
+        .eq("is_active", true)
+        .order("sort_order"),
     ]);
 
-  const teamMap = new Map((teams ?? []).map((t) => [t.id, t.name]));
-  const disciplineMap = new Map((disciplines ?? []).map((d) => [d.id, d.name]));
+  const standingsMap = new Map(
+    computeOverallStandings(
+      teams ?? [],
+      disciplines ?? [],
+      results ?? [],
+    ).map((row) => [row.team_id, row]),
+  );
+
+  const countingCount = (disciplines ?? []).filter((d) => d.counts_to_overall)
+    .length;
+
+  const teamRows = (teams ?? []).map((team) => {
+    const standing = standingsMap.get(team.id);
+    const teamResults = (results ?? []).filter((r) => r.team_id === team.id);
+    const filled = teamResults.filter(
+      (r) => r.place != null && r.status === "published",
+    ).length;
+    return {
+      team,
+      standing,
+      filled,
+      draftCount: teamResults.filter((r) => r.status === "draft").length,
+    };
+  });
 
   return (
     <AppShell
-      title="Результаты табло"
+      title="Табло по командам"
       role={profile.role}
       links={[
         { href: "/moderator", label: "Модератор" },
         { href: "/judge", label: "По дисциплинам" },
-        { href: "/tablo", label: "Табло" },
+        { href: "/tablo", label: "Публичное табло" },
       ]}
     >
       {params.message ? (
@@ -56,84 +72,38 @@ export default async function ModeratorResultsPage({
 
       <Card className="mb-6">
         <p className="text-sm text-slate-400">
-          Здесь записи для общего зачёта: у каждой команды — по одной строке на
-          дисциплину (место). На публичном табло команды видны один раз, с суммой
-          мест.
+          Одна карточка = одна команда. Откройте команду, чтобы ввести места по
+          всем дисциплинам. На публичном табло команды показываются одной
+          строкой с суммой мест.
         </p>
-        <Link
-          href="/judge"
-          className="mt-3 inline-block text-sm text-amber-300 hover:underline"
-        >
-          Добавить результат по дисциплине →
-        </Link>
       </Card>
 
-      {(results ?? []).length === 0 ? (
-        <Card>
-          <p className="text-slate-400">Записей пока нет.</p>
-        </Card>
-      ) : (
-        <div className="space-y-4">
-          {(results ?? []).map((result) => (
-            <Card key={result.id}>
-              <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <p className="font-medium">
-                    {teamMap.get(result.team_id) ?? "Команда"}
-                  </p>
-                  <p className="text-sm text-slate-400">
-                    {disciplineMap.get(result.discipline_id) ?? "Дисциплина"}
-                    {" · "}
-                    {result.status === "published" ? "На табло" : "Черновик"}
-                  </p>
-                </div>
-                <form action={deleteDisciplineResult}>
-                  <input type="hidden" name="id" value={result.id} />
-                  <input type="hidden" name="return_to" value="/moderator/results" />
-                  <Button type="submit" variant="danger">
-                    Удалить с табло
-                  </Button>
-                </form>
-              </div>
-
-              <form
-                action={saveDisciplineResult}
-                className="grid items-end gap-3 md:grid-cols-4"
-              >
-                <input
-                  type="hidden"
-                  name="discipline_id"
-                  value={result.discipline_id}
-                />
-                <input type="hidden" name="team_id" value={result.team_id} />
-                <input type="hidden" name="return_to" value="/moderator/results" />
-                <input type="hidden" name="score" value={result.score ?? ""} />
-                <div>
-                  <Label>Место</Label>
-                  <Input
-                    name="place"
-                    type="number"
-                    min={1}
-                    defaultValue={result.place ?? ""}
-                  />
-                </div>
-                <div>
-                  <Label>Статус</Label>
-                  <Select name="status" defaultValue={result.status}>
-                    <option value="published">На табло</option>
-                    <option value="draft">Черновик (скрыть)</option>
-                  </Select>
-                </div>
-                <div className="md:col-span-2">
-                  <Button type="submit" className="w-full">
-                    Сохранить изменения
-                  </Button>
-                </div>
-              </form>
-            </Card>
-          ))}
-        </div>
-      )}
+      <div className="space-y-3">
+        {teamRows.map(({ team, standing, filled, draftCount }) => (
+          <Link
+            key={team.id}
+            href={`/moderator/results/${team.id}`}
+            className="flex items-center justify-between gap-4 rounded-xl border border-slate-800 bg-slate-900/80 px-4 py-4 transition hover:border-amber-500/40"
+          >
+            <div>
+              <p className="text-lg font-semibold">{team.name}</p>
+              <p className="text-sm text-slate-400">
+                Заполнено дисциплин: {filled}
+                {countingCount > 0 ? ` / ${countingCount}` : ""}
+                {draftCount > 0 ? ` · черновиков: ${draftCount}` : ""}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-xs uppercase tracking-wider text-slate-500">
+                Сумма мест
+              </p>
+              <p className="text-2xl font-bold text-emerald-400">
+                {standing?.place_sum ?? "—"}
+              </p>
+            </div>
+          </Link>
+        ))}
+      </div>
     </AppShell>
   );
 }

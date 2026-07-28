@@ -24,8 +24,8 @@ export default async function ModeratorPage() {
         { href: "/moderator/teams", label: "Команды" },
         { href: "/moderator/groups", label: "Группы" },
         { href: "/moderator/schedule", label: "Расписание" },
-        { href: "/judge", label: "Оценки / места" },
-        { href: "/moderator/results", label: "Табло: правки" },
+        { href: "/moderator/results", label: "Табло по командам" },
+        { href: "/judge", label: "По дисциплинам" },
         { href: "/tablo", label: "Табло" },
         { href: "/schedule", label: "Публ. расписание" },
         ...(profile.role === "admin" ? [{ href: "/admin", label: "Админ" }] : []),
@@ -52,9 +52,9 @@ export default async function ModeratorPage() {
           <li>Группы A/B/C/D (и A1, A2…) для футбола и волейбола</li>
           <li>Счёт матча прямо в расписании (отображается на ТВ)</li>
           <li>
-            <strong className="text-amber-300">Места по дисциплинам</strong>{" "}
-            — как у судьи (для возрастных судей можно вводить самому). На табло
-            одна строка на команду = сумма мест.
+            <strong className="text-amber-300">Табло по командам</strong> —
+            открываете команду и вводите места по всем дисциплинам. На публичном
+            табло одна строка = сумма мест.
           </li>
           <li>Статусы: ожидается / идёт / завершён</li>
         </ul>
@@ -63,13 +63,13 @@ export default async function ModeratorPage() {
             href="/moderator/results"
             className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-slate-950"
           >
-            Редактировать / удалить с табло
+            Табло по командам
           </Link>
           <Link
             href="/judge"
             className="rounded-lg border border-slate-700 px-4 py-2 text-sm"
           >
-            Ввести места
+            Ввод по дисциплинам
           </Link>
           <Link
             href="/moderator/groups"
