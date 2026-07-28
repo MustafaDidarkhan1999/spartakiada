@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { PublicNav } from "@/components/public-nav";
 import { computeGroupStandings } from "@/lib/group-standings";
 
+export const dynamic = "force-dynamic";
+
 const GROUP_DISCIPLINE_NAMES = ["Мини-футбол", "Волейбол"];
 
 export default async function GroupsPage() {
