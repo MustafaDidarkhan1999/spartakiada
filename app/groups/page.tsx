@@ -173,8 +173,8 @@ export default async function GroupsPage() {
         })}
 
         <p className="text-center text-sm text-slate-500">
-          Очки считаются из счёта матчей в расписании: матч в группе, если указана
-          группа или обе команды в её составе.{" "}
+          Очки считаются из всех матчей команды в этой дисциплине (в том числе
+          против соперников из других групп).{" "}
           <Link href="/schedule" className="text-amber-300 hover:underline">
             Смотреть расписание →
           </Link>

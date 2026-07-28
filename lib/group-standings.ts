@@ -15,8 +15,9 @@ export type GroupStandingRow = {
 };
 
 /**
- * Group-stage table: win = 3, draw = 1, loss = 0.
- * Uses finished/live matches (or any match with a score).
+ * Group table: win = 3, draw = 1, loss = 0.
+ * Every match with a score counts for group members who played,
+ * including games vs teams from other groups.
  */
 export function computeGroupStandings(
   group: TournamentGroup,
@@ -52,7 +53,6 @@ export function computeGroupStandings(
     if (!event.team_a_id || !event.team_b_id) return false;
     if (getMatchScores(event) == null) return false;
 
-    // Discipline must match the group (when set on the event).
     if (
       event.discipline_id != null &&
       event.discipline_id !== group.discipline_id
@@ -60,13 +60,30 @@ export function computeGroupStandings(
       return false;
     }
 
-    const bothInGroup =
-      memberIdSet.has(event.team_a_id) && memberIdSet.has(event.team_b_id);
-
-    // Explicit group on the match wins; otherwise infer from roster.
-    if (event.group_id != null) return event.group_id === group.id;
-    return bothInGroup;
+    return (
+      memberIdSet.has(event.team_a_id) || memberIdSet.has(event.team_b_id)
+    );
   });
+
+  function applyResult(
+    row: GroupStandingRow,
+    goalsFor: number,
+    goalsAgainst: number,
+  ) {
+    row.played += 1;
+    row.goals_for += goalsFor;
+    row.goals_against += goalsAgainst;
+
+    if (goalsFor > goalsAgainst) {
+      row.wins += 1;
+      row.points += 3;
+    } else if (goalsFor < goalsAgainst) {
+      row.losses += 1;
+    } else {
+      row.draws += 1;
+      row.points += 1;
+    }
+  }
 
   for (const event of relevant) {
     const scores = getMatchScores(event);
@@ -74,29 +91,9 @@ export function computeGroupStandings(
 
     const rowA = rows.get(event.team_a_id);
     const rowB = rows.get(event.team_b_id);
-    if (!rowA || !rowB) continue;
 
-    rowA.played += 1;
-    rowB.played += 1;
-    rowA.goals_for += scores.a;
-    rowA.goals_against += scores.b;
-    rowB.goals_for += scores.b;
-    rowB.goals_against += scores.a;
-
-    if (scores.a > scores.b) {
-      rowA.wins += 1;
-      rowA.points += 3;
-      rowB.losses += 1;
-    } else if (scores.a < scores.b) {
-      rowB.wins += 1;
-      rowB.points += 3;
-      rowA.losses += 1;
-    } else {
-      rowA.draws += 1;
-      rowB.draws += 1;
-      rowA.points += 1;
-      rowB.points += 1;
-    }
+    if (rowA) applyResult(rowA, scores.a, scores.b);
+    if (rowB) applyResult(rowB, scores.b, scores.a);
   }
 
   for (const row of rows.values()) {
