@@ -5,11 +5,12 @@ import { createClient } from "@/lib/supabase/client";
 import type {
   Discipline,
   DisciplineResult,
+  OverallPlace,
   ScheduleEvent,
   Team,
   TournamentGroup,
 } from "@/types";
-import { computeOverallStandings } from "@/lib/standings";
+import { computeOverallStandings, type OverallMode } from "@/lib/standings";
 import { SCHEDULE_STATUS_LABELS } from "@/types";
 import { eventDateInAlmaty, formatEventDateTime } from "@/lib/datetime";
 import { getMatchScores } from "@/lib/match-score";
@@ -35,16 +36,22 @@ export function StandingsBoard({
   initialTeams,
   initialDisciplines,
   initialResults,
+  initialOverallPlaces = [],
+  initialOverallMode = "auto",
   compact = false,
 }: {
   initialTeams: Team[];
   initialDisciplines: Discipline[];
   initialResults: DisciplineResult[];
+  initialOverallPlaces?: OverallPlace[];
+  initialOverallMode?: OverallMode;
   compact?: boolean;
 }) {
   const [teams] = useState(initialTeams);
   const [disciplines] = useState(initialDisciplines);
   const [results, setResults] = useState(initialResults);
+  const [overallPlaces, setOverallPlaces] = useState(initialOverallPlaces);
+  const [overallMode, setOverallMode] = useState<OverallMode>(initialOverallMode);
 
   useEffect(() => {
     const supabase = createClient();
@@ -61,6 +68,28 @@ export function StandingsBoard({
           if (data) setResults(data as DisciplineResult[]);
         },
       )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "overall_places" },
+        async () => {
+          const { data } = await supabase.from("overall_places").select("*");
+          if (data) setOverallPlaces(data as OverallPlace[]);
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "app_settings" },
+        async () => {
+          const { data } = await supabase
+            .from("app_settings")
+            .select("value")
+            .eq("key", "overall_mode")
+            .maybeSingle();
+          if (data?.value === "manual" || data?.value === "auto") {
+            setOverallMode(data.value);
+          }
+        },
+      )
       .subscribe();
 
     return () => {
@@ -68,12 +97,24 @@ export function StandingsBoard({
     };
   }, []);
 
-  const standings = computeOverallStandings(teams, disciplines, results);
+  const standings = computeOverallStandings(teams, disciplines, results, {
+    mode: overallMode,
+    overallPlaces,
+  });
 
   return (
     <div className="space-y-3">
+      {overallMode === "manual" ? (
+        <p className="mb-2 text-sm text-amber-300/90">
+          Показан ручной общий зачёт (места введены организатором).
+        </p>
+      ) : null}
       {standings.length === 0 ? (
-        <p className="text-slate-400">Пока нет опубликованных результатов.</p>
+        <p className="text-slate-400">
+          {overallMode === "manual"
+            ? "Ручные места общего зачёта ещё не введены."
+            : "Пока нет опубликованных результатов."}
+        </p>
       ) : (
         standings.map((row, index) => (
           <div
@@ -84,25 +125,29 @@ export function StandingsBoard({
               <span
                 className={`flex items-center justify-center rounded-full bg-amber-500/20 font-bold text-amber-300 ${compact ? "h-9 w-9 text-base" : "h-10 w-10 text-lg"}`}
               >
-                {index + 1}
+                {row.is_manual ? (row.manual_place ?? index + 1) : index + 1}
               </span>
               <div>
                 <p className={compact ? "text-lg font-semibold" : "text-xl font-semibold"}>
                   {row.team_name}
                 </p>
                 <p className="text-sm text-slate-400">
-                  Дисциплин: {row.disciplines_count} · 1-е места: {row.first_places}
+                  {row.is_manual
+                    ? row.disciplines_count > 0
+                      ? `Авто-сумма мест: ${row.place_sum} · дисциплин: ${row.disciplines_count}`
+                      : "Ручное место в общем зачёте"
+                    : `Дисциплин: ${row.disciplines_count} · 1-е места: ${row.first_places}`}
                 </p>
               </div>
             </div>
             <div className="text-right">
               <p className="text-xs uppercase tracking-wider text-slate-500">
-                Сумма мест
+                {row.is_manual ? "Место" : "Сумма мест"}
               </p>
               <p
                 className={`font-bold text-emerald-400 ${compact ? "text-2xl" : "text-3xl"}`}
               >
-                {row.place_sum}
+                {row.is_manual ? (row.manual_place ?? "—") : row.place_sum}
               </p>
             </div>
           </div>

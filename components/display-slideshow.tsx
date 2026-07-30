@@ -2,7 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { StandingsBoard, ScheduleBoard } from "@/components/live-boards";
-import type { Discipline, DisciplineResult, ScheduleEvent, Team } from "@/types";
+import type {
+  Discipline,
+  DisciplineResult,
+  OverallPlace,
+  ScheduleEvent,
+  Team,
+} from "@/types";
+import type { OverallMode } from "@/lib/standings";
 
 const SLIDE_MS = 20_000;
 
@@ -11,11 +18,15 @@ export function DisplaySlideshow({
   disciplines,
   results,
   events,
+  overallPlaces = [],
+  overallMode = "auto",
 }: {
   teams: Team[];
   disciplines: Discipline[];
   results: DisciplineResult[];
   events: ScheduleEvent[];
+  overallPlaces?: OverallPlace[];
+  overallMode?: OverallMode;
 }) {
   const [slide, setSlide] = useState<"tablo" | "schedule">("tablo");
   const [secondsLeft, setSecondsLeft] = useState(SLIDE_MS / 1000);
@@ -81,6 +92,8 @@ export function DisplaySlideshow({
             initialTeams={teams}
             initialDisciplines={disciplines}
             initialResults={results}
+            initialOverallPlaces={overallPlaces}
+            initialOverallMode={overallMode}
             compact
           />
         ) : (

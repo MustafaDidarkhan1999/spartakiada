@@ -99,7 +99,18 @@ export type OverallStanding = {
   first_places: number;
   second_places: number;
   third_places: number;
+  is_manual?: boolean;
+  manual_place?: number | null;
 };
+
+export type OverallPlace = {
+  team_id: string;
+  place: number;
+  entered_by: string | null;
+  updated_at: string;
+};
+
+export type OverallMode = "auto" | "manual";
 
 export const SCHEDULE_STATUS_LABELS: Record<ScheduleStatus, string> = {
   scheduled: "Ожидается",

@@ -34,6 +34,7 @@ async function revalidateAll() {
   revalidatePath("/moderator/groups");
   revalidatePath("/groups");
   revalidatePath("/judge");
+  revalidatePath("/judge/overall");
   revalidatePath("/admin");
 }
 
@@ -550,6 +551,111 @@ export async function saveTeamResults(formData: FormData) {
 
   await revalidateAll();
   redirect(`${back}?message=${encodeURIComponent("Места команды сохранены.")}`);
+}
+
+/** Save manual overall places for all teams. */
+export async function saveOverallPlaces(formData: FormData) {
+  const profile = await requireProfile(["admin", "moderator"]);
+  const supabase = await createClient();
+  const back = "/judge/overall";
+
+  const { data: teams, error: teamsError } = await supabase
+    .from("teams")
+    .select("id")
+    .eq("is_active", true);
+
+  if (teamsError) {
+    redirect(`${back}?error=${encodeURIComponent(teamsError.message)}`);
+  }
+
+  for (const team of teams ?? []) {
+    const placeRaw = String(formData.get(`place_${team.id}`) ?? "").trim();
+
+    if (placeRaw === "") {
+      const { error } = await supabase
+        .from("overall_places")
+        .delete()
+        .eq("team_id", team.id);
+      if (error) {
+        redirect(`${back}?error=${encodeURIComponent(error.message)}`);
+      }
+      continue;
+    }
+
+    const place = Number(placeRaw);
+    if (!Number.isFinite(place) || place < 1) {
+      redirect(
+        `${back}?error=${encodeURIComponent("Место должно быть числом ≥ 1.")}`,
+      );
+    }
+
+    const { error } = await supabase.from("overall_places").upsert(
+      {
+        team_id: team.id,
+        place,
+        entered_by: profile.id,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "team_id" },
+    );
+
+    if (error) {
+      redirect(`${back}?error=${encodeURIComponent(error.message)}`);
+    }
+  }
+
+  await revalidateAll();
+  redirect(
+    `${back}?message=${encodeURIComponent("Ручные места общего зачёта сохранены.")}`,
+  );
+}
+
+export async function setOverallModeManual(_formData: FormData) {
+  await requireProfile(["admin", "moderator"]);
+  const supabase = await createClient();
+  const back = "/judge/overall";
+
+  const { error } = await supabase.from("app_settings").upsert(
+    {
+      key: "overall_mode",
+      value: "manual",
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "key" },
+  );
+
+  if (error) {
+    redirect(`${back}?error=${encodeURIComponent(error.message)}`);
+  }
+
+  await revalidateAll();
+  redirect(
+    `${back}?message=${encodeURIComponent("На табло включены ручные места общего зачёта.")}`,
+  );
+}
+
+export async function setOverallModeAuto(_formData: FormData) {
+  await requireProfile(["admin", "moderator"]);
+  const supabase = await createClient();
+  const back = "/judge/overall";
+
+  const { error } = await supabase.from("app_settings").upsert(
+    {
+      key: "overall_mode",
+      value: "auto",
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "key" },
+  );
+
+  if (error) {
+    redirect(`${back}?error=${encodeURIComponent(error.message)}`);
+  }
+
+  await revalidateAll();
+  redirect(
+    `${back}?message=${encodeURIComponent("На табло снова автоподсчёт (сумма мест по дисциплинам).")}`,
+  );
 }
 
 export async function deleteDisciplineResult(formData: FormData) {

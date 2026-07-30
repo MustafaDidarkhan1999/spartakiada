@@ -56,12 +56,22 @@ export default async function ModeratorPage() {
             открываете команду и вводите места по всем дисциплинам. На публичном
             табло одна строка = сумма мест.
           </li>
+          <li>
+            <strong className="text-amber-300">Ручной общий зачёт</strong> —
+            окончательные места команд на табло (с возвратом к автоподсчёту).
+          </li>
           <li>Статусы: ожидается / идёт / завершён</li>
         </ul>
         <div className="mt-4 flex flex-wrap gap-3">
           <Link
-            href="/moderator/results"
+            href="/judge/overall"
             className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-slate-950"
+          >
+            Ручной общий зачёт
+          </Link>
+          <Link
+            href="/moderator/results"
+            className="rounded-lg border border-slate-700 px-4 py-2 text-sm"
           >
             Табло по командам
           </Link>

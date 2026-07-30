@@ -43,6 +43,9 @@ export default async function JudgePage() {
       role={profile.role}
       links={[
         { href: "/tablo", label: "Табло" },
+        ...(profile.role === "admin" || profile.role === "moderator"
+          ? [{ href: "/judge/overall", label: "Общий зачёт" }]
+          : []),
         ...(profile.role === "admin"
           ? [{ href: "/admin", label: "Админ" }]
           : profile.role === "moderator"
@@ -50,6 +53,22 @@ export default async function JudgePage() {
             : []),
       ]}
     >
+      {profile.role === "admin" || profile.role === "moderator" ? (
+        <Card className="mb-6">
+          <h3 className="text-lg font-semibold">Общий зачёт команд</h3>
+          <p className="mt-1 text-sm text-slate-400">
+            Ввести окончательные места вручную или вернуться к автоподсчёту по
+            сумме мест дисциплин.
+          </p>
+          <Link
+            href="/judge/overall"
+            className="mt-4 inline-block rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-slate-950"
+          >
+            Ручные места общего зачёта
+          </Link>
+        </Card>
+      ) : null}
+
       <div className="grid gap-4 md:grid-cols-2">
         {(disciplines ?? []).map((discipline) => (
           <Card key={discipline.id}>

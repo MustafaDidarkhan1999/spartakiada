@@ -79,6 +79,19 @@ create table public.discipline_results (
   unique (discipline_id, team_id)
 );
 
+create table public.app_settings (
+  key text primary key,
+  value text not null,
+  updated_at timestamptz not null default now()
+);
+
+create table public.overall_places (
+  team_id uuid primary key references public.teams (id) on delete cascade,
+  place int not null check (place > 0),
+  entered_by uuid references public.profiles (id) on delete set null,
+  updated_at timestamptz not null default now()
+);
+
 create index idx_schedule_starts_at on public.schedule_events (starts_at);
 create index idx_results_discipline on public.discipline_results (discipline_id);
 create index idx_results_team on public.discipline_results (team_id);
@@ -172,6 +185,8 @@ alter table public.disciplines enable row level security;
 alter table public.judge_assignments enable row level security;
 alter table public.schedule_events enable row level security;
 alter table public.discipline_results enable row level security;
+alter table public.app_settings enable row level security;
+alter table public.overall_places enable row level security;
 
 -- Public read for live boards
 create policy "Public read teams" on public.teams
@@ -225,10 +240,24 @@ create policy "Judge update assigned results" on public.discipline_results
 create policy "Judge delete assigned results" on public.discipline_results
   for delete using (public.is_judge_for_discipline(discipline_id));
 
+create policy "Public read app settings" on public.app_settings
+  for select using (true);
+
+create policy "Moderator manage app settings" on public.app_settings
+  for all using (public.is_moderator_or_admin());
+
+create policy "Public read overall places" on public.overall_places
+  for select using (true);
+
+create policy "Moderator manage overall places" on public.overall_places
+  for all using (public.is_moderator_or_admin());
+
 -- Realtime
 alter publication supabase_realtime add table public.schedule_events;
 alter publication supabase_realtime add table public.discipline_results;
 alter publication supabase_realtime add table public.teams;
+alter publication supabase_realtime add table public.overall_places;
+alter publication supabase_realtime add table public.app_settings;
 
 -- Seed disciplines
 insert into public.disciplines (name, counts_to_overall, sort_order) values
@@ -263,6 +292,9 @@ insert into public.teams (name, sort_order) values
   ('Gas Stream', 16),
   ('ERG team', 17),
   ('Pink Panther', 18);
+
+insert into public.app_settings (key, value) values
+  ('overall_mode', 'auto');
 
 -- After creating first user in Supabase Auth, make them admin:
 -- update public.profiles set role = 'admin' where id = 'YOUR-USER-UUID';
